@@ -1,0 +1,10 @@
+# install.packages("pscl") # updated on a personal directory
+install.packages("dplyr")
+install.packages("magrittr")
+install.packages("ggplot2")
+install.packages("tidyr")
+install.packages("coin")
+install.packages("devtools")
+install.packages("gamlss")
+install.packages("GenomeInfoDb")
+BiocManager::install("MAST")
