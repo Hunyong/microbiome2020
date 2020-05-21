@@ -8,13 +8,16 @@ if (FALSE) {result.stat %<>% mutate(LB.nonz = round(LB.nonz, 3), LB.zero = round
                                     Wg.nonz = round(Wg.nonz, 3), Wg.zero = round(Wg.zero, 3),
                                     Wg.glob = round(Wg.glob, 3))}
 
-test.name = data.frame(abbr = c("LB.nonz", "LB.zero", "LB.glob", "LN", "KW",
-                                "MAST.nonz", "MAST.zero", "MAST.glob",
-                                "Wg.nonz", "Wg.zero", "Wg.glob", "(Reserved)"),
-                       full = c("Logistic Beta - nonzero", "Logistic Beta - zero", "Logistic Beta - global", 
+test.name = data.frame(abbr = c("LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "KW",
+                                "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min",
+                                "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DESeq2", "WRS",
+                                "(Reserved)"),
+                       full = c("Logistic Beta - nonzero", "Logistic Beta - zero", 
+                                "Logistic Beta - global", "Logistic Beta - min", 
                                 "Log-Normal", "Kruskal-Wallis",
-                                "MAST - nonzero", "MAST - zero", "MAST - global",
-                                "Wagner - nonzero", "Wagner - zero", "Wagner - global", "(Reserved)"))
+                                "MAST - nonzero", "MAST - zero", "MAST - global", "MAST - min",
+                                "Wagner - nonzero", "Wagner - zero", "Wagner - global", "Wagner - min", 
+                                "DESeq2", "WRS", "(Reserved)"))
 
 pval.plot <- function(result.stat, parameter_in_use = parameter1,
                       i = 1, test = "LB.glob", k.index=1:dim(parameter_in_use)[1], 

@@ -51,7 +51,10 @@ for (i in 1:10) {
     save_file.stat = paste0("output/stat-n", n, "-pert", perturb, "-", model, "-", i, ".", j, ".", k, ".rds")
     
     if (!dir.exists(save_path)) {message("No output folder detected. Creating one."); dir.create(save_path)}
-    if (file.exists(save_file.stat)) {stop("done already.")}
+    if (file.exists(save_file.stat)) {
+      next  # next i
+      # stop("done already.")
+    }
     
     ### 0.1 library
     library(dplyr); library(magrittr); library(ggplot2); library(gridExtra)
