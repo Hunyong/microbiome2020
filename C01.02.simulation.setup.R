@@ -9,8 +9,9 @@ source("F01.02.models.R")
 # n = 120; nD <- nT <- nH <- 40; 
 
 # simulation-wise parameters
-n.sim = 10000
-method.stat = tester.set.HD.batch(n.sim=5, skeleton=TRUE)[[1]] %>% rownames
+M = 10 # Mast replicates
+cutoff = 0.9; sig = 0.05 # % NA < 0.9, p <= 0.05
+method.stat = tester.set.HD.batch(n.gene=5, skeleton=TRUE)[[1]] %>% rownames
 # LB.nonz LB.zero LB.glob LN MAST.nonz MAST.zero MAST.glob KW Wg.nonz Wg.zero Wg.glob DESeq2 (Reserved)
 method = gsub("\\..*$","",method.stat) %>% unique
 # LB LN MAST KW Wagner DESeq2 (spare)

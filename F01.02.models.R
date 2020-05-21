@@ -2,7 +2,8 @@
 # install.packages("BiocManager")
 #BiocManager::install("DESeq2")
 library(BiocManager)
-n.test = 13 #"LB.nonz", "LB.zero", "LB.glob", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Reserved"
+n.test = 17 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
+            #"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DESeq2", "WRS", "(Reserved)"
 # if(!require(betareg)){
 #   install.packages("betareg")
 # }
@@ -11,30 +12,33 @@ n.test = 13 #"LB.nonz", "LB.zero", "LB.glob", "LN", "MAST.nonz", "MAST.zero", "M
 ### 0. testing a set of methods at once
 # testing all methods using counts (or RPK) of a single gene (old: single gene. cannot do MAST).
 # HD: binary phenotype (healthy-diseased)
-tester.set.HD.batch <- function(data, n.sim = 10000, sig = 0.05, skeleton = FALSE, 
+tester.set.HD.batch <- function(data, n.gene = 10000, 
+                                pvalue.only = FALSE, skeleton = FALSE, 
                                 suppressWarnWagner = FALSE, LB.skip = FALSE, 
                                 LN.skip = FALSE, MAST.skip = FALSE,
                                 KW.skip = FALSE, Wg.skip = FALSE,
-                                De2.skip = FALSE,
-                                fin.correction = FALSE, skip.small.n = FALSE) {
+                                De2.skip = FALSE, WRS.skip = FALSE,
+                                skip.small.n = FALSE) {
   # description
-  # data should have y and sampleSum    all n.sample x (n.sim(gene) + 3 (phenotype + batch + sampleSum))
+  # data should have y and sampleSum    all n.sample x (n.gene(gene) + 3 (phenotype + batch + sampleSum))
   #          outcome (phenotype), nuisance (batch)
   # skeleton: returning only skeleton (for simulation structure)
+  # Sometime in 2019, DEseq2 test was added.
+  # On May 20, 2020: WRS test has been added.
   require(magrittr)
   
   # 0.0 skeleton #empty matrix
-  test.names <- c("LB.nonz", "LB.zero", "LB.glob", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "DESeq2","(Reserved)")
-  mat.tmp <- matrix(NA, n.test, n.sim, dimnames = list(test.names, NULL)) # n.test=12, n.sim=1000
-  result <- list(coef = mat.tmp, pval = mat.tmp, coef.fin = mat.tmp, pval.fin = mat.tmp)
-  
+  test.names <- c("LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
+                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DESeq2", "WRS", "(Reserved)")
+  mat.tmp <- matrix(NA, n.test, n.gene, dimnames = list(test.names, NULL)) # n.test=14, n.gene=1000
+  result <- list(coef = mat.tmp, pval = mat.tmp)
   if (skeleton) {return(result)}
   
   # 0.1 data
   data2 <- data
   gsub("y\\.","",names(data)) %>% as.numeric %>% na.omit %>% as.numeric -> genes
-  if (n.sim > genes[length(genes)]) stop(paste0("Only ", length(genes), " genes provided, while trying to do ", n.sim, " simulations."))
-  genes = genes[1:min(n.sim,length(genes))]
+  if (n.gene > genes[length(genes)]) stop(paste0("Only ", length(genes), " genes provided, while trying to do ", n.gene, " simulations."))
+  genes = genes[1:min(n.gene,length(genes))]
   
   data = data.frame(data[,1:length(genes)], phenotype = data$phenotype, batch = data$batch)
   ## print(head(data))    (No longer need to check data)
@@ -49,8 +53,7 @@ tester.set.HD.batch <- function(data, n.sim = 10000, sig = 0.05, skeleton = FALS
   #1-3. LB
   if (!LB.skip) {
     for (l in genes) {
-      cat (" l = ",l," ")
-      # if (l %% 200 == 0) {print("l = ")}
+      if (l %% 30 == 0) cat (" l = ",l," ")
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
       if (sum(data.l$y)==0) {
         tmp <- data.frame(coef = rep(NA,3), pval = NA)
@@ -58,8 +61,9 @@ tester.set.HD.batch <- function(data, n.sim = 10000, sig = 0.05, skeleton = FALS
         ## print(data[,l]) (For debug only)
         tmp <- LB(data.l)  #logistic beta
       }
-      result[[1]][1:3, l] <- tmp[1:3,1] #coef. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
-      result[[2]][1:3, l] <- tmp[1:3,2] #pval. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
+      result[[1]][c("LB.nonz", "LB.zero", "LB.glob"), l] <- tmp[1:3, 1] #coef. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
+      result[[2]][c("LB.nonz", "LB.zero", "LB.glob"), l] <- tmp[1:3, 2] #pval. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
+      if (any(!is.na(tmp[1:2, 2]))) result[[2]]["LB.min", l] <- min(tmp[1:2, 2], na.rm = TRUE)
     }
   } else {cat("LB is skipped")}
   
@@ -75,26 +79,27 @@ tester.set.HD.batch <- function(data, n.sim = 10000, sig = 0.05, skeleton = FALS
       if (sum(data.l$y)==0) {
         tmp <- data.frame(coef = NA, pval = NA)
       } else {
-        tmp <- LN(data.l, sig = sig)  #log normal
+        tmp <- LN(data.l)  #log normal
       }
-      result[[1]][4, l] <- tmp[1,1] #coef.
-      result[[2]][4, l] <- tmp[1,2] #pval.
+      result[[1]]["LN", l] <- tmp[1,1] #coef.
+      result[[2]]["LN", l] <- tmp[1,2] #pval.
     }
   } else {cat("LN is skipped")}
   
   #5-7. MAST
   cat("\n5-7. MAST\n")
   if(!MAST.skip){
-    # tmp <- MAST(data, sig = sig)  #MAST
+    # tmp <- MAST(data)  #MAST
     # tmp <- data.frame(coef = rep(NA,3), pval = NA)    #MAST maybe not applicable
-    tmp <- MAST(data, sig = sig)
-    result[[1]][5:7, ] <- tmp[[1]][1:3,] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
-    result[[2]][5:7, ] <- tmp[[2]][1:3,] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
+    tmp <- MAST(data)
+    result[[1]][c("MAST.nonz", "MAST.zero", "MAST.glob"), ] <- tmp[[1]][1:3,] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
+    result[[2]][c("MAST.nonz", "MAST.zero", "MAST.glob"), ] <- tmp[[2]][1:3,] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
+    result[[2]]["MAST.min", ] <- pmin(tmp[[2]][1,], tmp[[2]][2,], na.rm = TRUE)
   } else {cat("MAST is skipped")}
   
   #8. KW
   cat("\n8. Kruskal Wallis\n l = ")
-  if(!KW.skip){
+  if (!KW.skip){
     for (l in genes) {
       # cat (l," ")
       if (l %% 200 == 0) {cat(l, " ")}
@@ -102,10 +107,10 @@ tester.set.HD.batch <- function(data, n.sim = 10000, sig = 0.05, skeleton = FALS
       if (sum(data.l$y)==0) {
         tmp <- data.frame(coef = NA, pval = NA)
       } else {
-        tmp <- KW(data.l, sig = sig)  #KW
+        tmp <- KW(data.l)  #KW
       }
-      result[[1]][8, l] <- tmp[1,1] #coef.
-      result[[2]][8, l] <- tmp[1,2] #pval.
+      result[[1]]["KW", l] <- tmp[1,1] #coef.
+      result[[2]]["KW", l] <- tmp[1,2] #pval.
     }
   } else {cat("KW is skipped")}
   
@@ -119,29 +124,45 @@ tester.set.HD.batch <- function(data, n.sim = 10000, sig = 0.05, skeleton = FALS
       if (sum(data.l$y)==0) {
         tmp <- data.frame(coef = rep(NA,3), pval = NA)
       } else {
-        tmp <- Wagner(data.l, sig = sig, zeroModel = "logistic", suppressWarning = suppressWarnWagner)
+        tmp <- Wagner(data.l, zeroModel = "logistic", suppressWarning = suppressWarnWagner)
       }
-      result[[1]][9:11, l] <- tmp[1:3,1] #coef.
-      result[[2]][9:11, l] <- tmp[1:3,2] #pval.
+      result[[1]][c("Wg.nonz", "Wg.zero", "Wg.glob"), l] <- tmp[1:3,1] #coef.
+      result[[2]][c("Wg.nonz", "Wg.zero", "Wg.glob"), l] <- tmp[1:3,2] #pval.
+      if (any(!is.na(tmp[1:2, 2]))) result[[2]]["Wg.min", l] <- min(tmp[1:2, 2], na.rm = TRUE)
     }
   } else {cat("Wg is skipped")}
   
   #12. De2
   cat("\n12. DESeq2\n")
   if(!De2.skip){
-    tmp <- DS2(data, sig = sig)
+    tmp <- DS2(data)
     
-    result[[1]][12, ] <- tmp[,1] #coef.
-    result[[2]][12, ] <- tmp[,2] #pval.
+    result[[1]]["DESeq2", ] <- tmp[,1] #coef.
+    result[[2]]["DESeq2", ] <- tmp[,2] #pval.
     
   }
   
+  cat("\n13. WRS\n l = ")
+  if (!WRS.skip){
+    for (l in genes) {
+      # cat (l," ")
+      if (l %% 200 == 0) {cat(l, " ")}
+      data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
+      if (sum(data.l$y)==0) {
+        tmp <- data.frame(coef = NA, pval = NA)
+      } else {
+        tmp <- WRS(data.l)  #KW
+      }
+      result[[1]]["WRS", l] <- tmp[1,1] #coef.
+      result[[2]]["WRS", l] <- tmp[1,2] #pval.
+    }
+  } else {cat("KW is skipped")}
   
-  #13. (reserved)
-  cat("13. Reserved\n")
-  # tmp <- data.frame(coef = NA, pval = NA)    #reserved for possible addition
-  # result[[1]][13,1] <- tmp[1,1]
-  # result[[2]][13,1] <- tmp[1,2]
+  #14. (reserved)
+  cat("14. Reserved\n")
+  tmp <- data.frame(coef = NA, pval = NA)    #reserved for possible addition
+  result[[1]][14,1] <- tmp[1,1]
+  result[[2]][14,1] <- tmp[1,2]
   
   return(result)
 }
@@ -151,55 +172,8 @@ if (FALSE) {# examples
   data = rZINB.sim(n.sample=rep(3,4),n.genes=30, 1,1,1)
   data %>% dplyr::select(-phenotype, - batch) %>% apply(1, sum) -> data$sampleSum
   data.1 = data.frame(y=data[,1], data[,c("phenotype", "batch", "sampleSum")])
-  a = tester.set.HD.batch(data, n.sim=30)
+  a = tester.set.HD.batch(data, n.gene=30)
 }
-
-
-### 1~3. LB
-LB.old <- function (data, sig = 0.05, test = FALSE) {
-  require(gamlss)
-  data$y.prop = data$y / data$sampleSum  #sampleSum[j] = sum_g y_g,j (g:gene, j:sample)
-  # print(head(data$y.prop))  
-  # 1. two-part models
-  bereg = try(gamlss(y.prop ~ phenotype + batch, nu.formula = ~ phenotype + batch,
-                     family = BEZI(sigma.link = "log"), data = data,
-                     control = gamlss.control(n.cyc = 100, trace = FALSE)))
-  
-  if (any(class(bereg) %in% "try-error")) {
-    return(matrix(NA, 3, 2, 
-                  dimnames = list(c("LB.nonz", "LB.zero", "LB.glob"), c("Estimate", "pval"))))}
-  
-  out1 = summary(bereg)[c(2,6), c(1,4)]
-  
-  # Alternative code should be updated (b/c when vcov fails, qr should be used.)
-  # bereg.mat = c(try(suppressWarnings(vcov(bereg, type = "all", 
-  #                   robust = F, hessian.fun = "R")), silent = TRUE), 
-  #               df.res = bereg$df.res)
-  # coef <- bereg.mat$coef
-  # pvalue <- 2 * pt(-abs(coef/bereg.mat$se), bereg.mat$df.res)
-  # pheno.index = grep("phenotype", names(coef))  #location of phenotype
-  # out1 = cbind(coef, pvalue)[pheno.index,]
-  
-  # 2. global test
-  bereg.null = try(gamlss(y.prop ~ batch, nu.formula = ~ batch,
-                          family = BEZI(sigma.link = "log"),  data = data,
-                          control = gamlss.control(n.cyc = 100, trace = FALSE)))
-  if (any(class(bereg.null) %in% "try-error")) {bereg.null <- list(G.deviance = NA, df.residual = NA)}
-  
-  chisq = bereg.null$G.deviance - bereg$G.deviance
-  df = bereg.null$df.residual - bereg$df.residual
-  out2 = matrix(c(chisq, 1 - pchisq(chisq, df)), 1, 2)
-  
-  # 3. stack up
-  out = rbind(out1, out2)
-  rownames(out) = c("LB.nonz", "LB.zero", "LB.glob")
-  colnames(out) = c("Estimate", "pval")
-  if (test == TRUE){
-    print(out)
-  }
-  return(out)
-}
-
 
 ### 1~3. LB
 # instead of Boyangs LB.test(), use the previous LB()
@@ -305,7 +279,7 @@ if (FALSE) {
 
 
 ### 4. Log-normal
-LN <- function (data, sig = 0.05, epsilon = 1) {
+LN <- function (data, epsilon = 1) {
   # log-transformation
   data$log2y = log2(data$y + epsilon)
   
@@ -319,7 +293,7 @@ LN <- function (data, sig = 0.05, epsilon = 1) {
 
 
 ### 5-7. MAST TBD!!!
-MAST <- function (data, sig = 0.05) {
+MAST <- function (data) {
   # devtools::install_github("RGLab/MAST")
   require (MAST)
   
@@ -399,7 +373,7 @@ if (FALSE) {# example
 
 
 ### 8. KW
-KW <- function (data, sig = 0.05) {
+KW <- function (data) {
   require(coin)
   # log-transformation not needed for KW
   
@@ -411,7 +385,7 @@ KW <- function (data, sig = 0.05) {
 }
 
 ### 9. Wagner
-Wagner <- function (data, sig = 0.05, zeroModel = c("logistic", "t.test", "lm"),
+Wagner <- function (data, zeroModel = c("logistic", "t.test", "lm"),
                     suppressWarning = FALSE) {
   
   # Instead of proportion t-test, logistic regression is used to adjust for batch effect.
@@ -510,7 +484,7 @@ if (FALSE) {# example
 }
 
 ### 12. DESeq2
-DS2 <- function (data.l, sig = 0.05) {
+DS2 <- function (data.l) {
   require(DESeq2)
   dds <- DESeqDataSetFromMatrix(countData = round(t(data.l[, grepl("^y", names(data.l))]),0),
                                 colData = data.l[, !grepl("^y", names(data.l))],
@@ -523,6 +497,16 @@ DS2 <- function (data.l, sig = 0.05) {
   results(dds3)
   res <- results(dds3, name="phenotype_H_vs_D")
   out = matrix(c(res$log2FoldChange, res$pvalue), ncol = 2)
+  colnames(out) = c("Estimate", "pval")
+  return(out)
+}
+
+
+### 13. WRS
+WRS <- function (data) {
+  # fitting a nonparametric model
+  out = wilcox.test(y ~ phenotype, data = data, exact = FALSE)
+  out = matrix(c(out$statistic, out$p.value), nrow = 1)
   colnames(out) = c("Estimate", "pval")
   return(out)
 }

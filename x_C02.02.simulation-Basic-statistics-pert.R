@@ -78,7 +78,7 @@ for (i in 1:length.delta) {
         na.index = rds$pval[index.MAST[3], ] %>% is.na %>% which
         rds$pval[index.MAST[3], na.index] = rds$pval[index.MAST[1], na.index]
         # leftovers
-        # result[[i]][[j]][[k]]$pval[7,na.index] %>% length %>%"/"(n.sim) %T>% print
+        # result[[i]][[j]][[k]]$pval[7,na.index] %>% length %>%"/"(n.gene) %T>% print
         
         # 2.2 MAST NA replacement for each replicate
         rds$MAST$pval <- 
@@ -148,7 +148,7 @@ result.stat.na = result.stat.na %>% mutate(i, effect = delta[i, 4], j, batch = k
 NA.proportion = NA.proportion %>% mutate(i, effect = delta[i, 4], j, batch = kappa[j,4])
 
 
-result <- list(base = data.frame(generative = model, significance = sig, n.sim = n.sim,
+result <- list(base = data.frame(generative = model, significance = sig, n.gene = n.gene,
                                  num.replicates.MAST = rep.MAST), 
                stat = result.stat,
                stat.na = result.stat.na,
