@@ -156,7 +156,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       result[[1]]["WRS", l] <- tmp[1,1] #coef.
       result[[2]]["WRS", l] <- tmp[1,2] #pval.
     }
-  } else {cat("KW is skipped")}
+  } else {cat("WRS is skipped")}
   
   #14. (reserved)
   cat("14. Reserved\n")
@@ -439,17 +439,17 @@ Wagner <- function (data, zeroModel = c("logistic", "t.test", "lm"),
   # out = wilcox.test(x = y.D, y = y.H,
   #             alternative = c("two.sided"), correct = TRUE)
   # print(data.nonzero)
-  # print("1. original WRS without batch")
-  # wilcox.test(x = y.D, y = y.H,
+  # print("1. original KW without batch")
+  # kruskal.test(x = y.D, y = y.H,
   #             alternative = c("two.sided"), exact = FALSE, correct = TRUE) %>% print
-  # print("2. modfified WRS without batch")
-  # coin::wilcox_test(y ~ factor(phenotype), data=data.nonzero) %>% print
+  # print("2. modfified KW without batch")
+  # coin::kruskal_test(y ~ factor(phenotype), data=data.nonzero) %>% print
   
   # print("4. t-test WITH batch")
   # lm(y~phenotype+batch, data=data.nonzero) %>% print
   
-  # print("3. modfified WRS WITH batch")
-  W = try(coin::wilcox_test(y ~ factor(phenotype) | factor(batch), data=data.nonzero), silent = suppressWarning) 
+  # print("3. modfified KW WITH batch")
+  W = try(coin::kruskal_test(y ~ factor(phenotype) | factor(batch), data=data.nonzero), silent = suppressWarning) 
   # silent=FALSE causes the slurm-output file size to explode.
   if (any(class(W) %in% "try-error")) {
     W = matrix(NA, 1, 2)
@@ -467,7 +467,6 @@ Wagner <- function (data, zeroModel = c("logistic", "t.test", "lm"),
   
   out = rbind(W, Z, chi2) # nonzero, zero, global
   rownames(out) = c("Wg.nonz", "Wg.zero", "Wg.glob")
-  rownames(out) = c("LB.nonz", "LB.zero", "LB.glob")
   
   return(out)
 }
