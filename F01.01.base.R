@@ -3,35 +3,28 @@
 ### 1.1 parameter estimator for ZINB ###
   library(pscl)
   
-  ZINB.ML <- function(yvec, xvec = 1, formula = y ~ x, notation="mtp") {
-    #notation (parametrization):
-    # abp: alpha-beta-pi
+  ZINB.ML <- function(yvec, notation="mtp") {
+    #notation (parametrization): June 2020.
     # mtp: mu-theta-pi
-    # * linkage:: alpha = theta, beta = theta/mu
-    if (!notation %in% c("abp", "mtp")) {stop("Notation is not correctly specified.")}
+    if (!notation %in% c("mtp")) {stop("Notation is not correctly specified.")}
     
-    d <- xvec %>% unique %>% length
-    if (d==1) {formula = y~1} else if (d>2) {
-      warning("factor x is forced to be numeric")
-      d = 2
-    }
-    data = data.frame(y=as.numeric(yvec) %>% round, x = as.numeric(xvec))
-    a <- pscl::zeroinfl(formula = formula, data = data, dist = "negbin", EM = TRUE)
-    theta <- a$theta # theta
+    # d <- xvec %>% unique %>% length
+    # if (d==1) {formula = y~1} else if (d>2) {
+    #   warning("factor x is forced to be numeric")
+    #   d = 2
+    # }
+    data = data.frame(y=as.numeric(yvec) %>% round)
+    a <- pscl::zeroinfl(formula = y ~ 1, data = data, dist = "negbin", EM = TRUE)
+    theta <- a$theta # theta (overdispersion phi. var = mu + mu^2 * phi)
+    # for theta parameter, see http://www.jstatsoft.org/v27/i08/.
     bg <- a$coef # regression (beta, gamma)
     
     pp <- plogis(cumsum(bg[[2]]))
     mu.nonzero = exp(cumsum(bg[[1]])) # e^beta
-    beta = theta/mu.nonzero
+    # beta = theta/mu.nonzero
     
-    if (notation=="abp") {
-      result <- c(theta, beta, pp)
-      names(result) = c("alpha", paste0("beta",0:(d-1)), paste0("pi",0:(d-1)))
-    } else if (notation == "mtp") {
-      result <- c(mu.nonzero, theta, pp)
-      names(result) = c(paste0("mu",0:(d-1)), "theta", paste0("pi",0:(d-1)))
-    }
-    
+    # if (notation == "mtp") {
+    result <- c(mu = mu.nonzero, theta = theta, pi = pp)
     return(result)
   }
   
@@ -46,8 +39,8 @@
     return(a)
   }
   
-  ZINB.ML.time <- function(yvec, xvec = 1, formula = y ~ x, notation="mtp",...) {
-    timeout(expression = ZINB.ML(yvec, xvec = xvec, formula = formula, notation=notation), ...) 
+  ZINB.ML.time <- function(yvec, notation="mtp",...) {
+    timeout(expression = ZINB.ML(yvec = yvec, notation=notation), ...) 
   }
   
 ### 1.2 random number generator for ZINB ###
@@ -56,22 +49,9 @@
 
     # gamma
     # rvec <- rgamma(n, shape = a, rate = 1/b)
-    rvec <- rgamma(n, shape = m/t, rate = 1/t) #because (a = m/t) and (b = t)
+    # rvec <- rgamma(n, shape = m/t, rate = 1/t) #because (a = m/t) and (b = t) <- old parametrization
+    rvec <- rgamma(n, shape = 1/t, scale = m*t)  #because m = a * b, a = 1/phi.  phi = t
     
-    # poisson from gamma
-    rvec <- rpois(n, rvec)
-    
-    # pi
-    pvec <- rbinom(n, 1, 1-p)
-    xvec <- rvec * pvec
-    return(xvec)
-  }
-  
-  rZINB.abp <- function(n, param=NULL, a, b, p) {
-    if (!is.null(param)) {a = param[1]; b = param[2]; p = param[3]}
-    
-    # gamma
-    rvec <- rgamma(n, shape = a, rate = 1/b)
     # poisson from gamma
     rvec <- rpois(n, rvec)
     
@@ -116,11 +96,16 @@ if (FALSE) { #example
   
   
 ### 2.1 random number generator for ZI-Gamma ###
+  # # old parametrization
+  # # t = var / mean
+  # # rvec <- rgamma(n, shape = m/t, rate = 1/t) #because (a = m/t) and (b = t)
   rZIG <- function(n, param=NULL, m, t, p) {
     if (!is.null(param)) {m = param[1]; t = param[2]; p = param[3]}
-    
+    # new parametrization on June 2020
+    # m = observed mean
+    # t = observed overdispersion (= var / mean^2)
     # gamma
-    rvec <- rgamma(n, shape = m/t, rate = 1/t) #because (a = m/t) and (b = t)
+    rvec <- rgamma(n, shape = 1/t, scale = m * t) # mu = alpha * beta, phi = 1/alpha
     
     # pi
     pvec <- rbinom(n, 1, 1-p)
@@ -134,16 +119,24 @@ if (FALSE) { #example
   }
   
 ### 2.2 random number generator for ZI-Log-normal ###
-  rZILN <- function(n, param=NULL, m, sig, p) {
+  
+  # # old parametrization
+  # # sig2 = log (t/m + 1)
+  # # sig = sqrt (sig2)
+  # # mm = log (m) - sig2/2
+  # # rvec <- exp(rnorm(n, mean = mm, sd = sig)) #because (a = m/t) and (b = t)
+  rZILN <- function(n, param=NULL, m, t, p) {
     if (!is.null(param)) {m = param[1]; t = param[2]; p = param[3]}
     
-    sig2 = log (t/m + 1)
-    sig = sqrt(sig2)
-    mm = log (m) - sig2/2
-    
+    # new parametrization on June 2020
+    # m = observed mean
+    # t = observed overdispersion (= var / mean^2)
+    # mm = mean(log(x))  // m = exp(mm + sig2/2)
+    # sig2 = var(log(x)) // t = var / mean^2 = exp(sig2 - 1)
+    sig2 = log(t) + 1
+    mm   = log(m) - sig2/2
     # normal
-    rvec <- exp(rnorm(n, mean = mm, sd = sig)) #because (a = m/t) and (b = t)
-    
+    rvec = exp(rnorm(n, mean = mm, sd = sqrt(sig2)))
     # pi
     pvec <- rbinom(n, 1, 1 - p)
     xvec <- rvec * pvec

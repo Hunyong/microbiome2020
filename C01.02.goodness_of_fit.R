@@ -56,6 +56,7 @@ qqplot1 <- function(values, distnFn, ks.pval, ..., title = "Beta", taxa = NULL) 
     geom_point() +
     annotate("text", x = 1, y = 0.25, label = kstest) +
     # xlim(c(0,max.q.x)) + ylim(c(0,max.q.y)) +
+    xlim(c(0,2)) + ylim(c(0,2)) +
     xlab(expression(paste("Expected (",-log[10], " quantile)"))) + 
     ylab(expression(paste("Observed (",-log[10], " quantile)"))) +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
@@ -83,7 +84,8 @@ qqplot.zinb <- function(values, rng = seq(min(values), max(values), by = 1),
 
 
 ST    = apply(DataRPK116, 2, sum)
-DataTPM116 <- t(t(DataRPK116)/ST)
+mean(ST) # 5,551,718
+DataTPM116 <- t(t(DataRPK116)/ST) * 5E+6
 
 # screening and sampling
 prev.filter = DataTPM116 %>% apply(1, function(x) mean(x>0)) %>% {which(. >= 0.1)}
@@ -95,10 +97,10 @@ i.taxa      = rownames(DataTPM116)[i.sample]
 tpm.i = DataTPM116[i.sample[1], ]
 rpk.i = DataRPK116[i.sample[1], ]
 con = gamlss.control(n.cyc = 100, trace = FALSE)
-full.beta  <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = BE(sigma.link = "log"), control = con)
-full.gamma <- gamlss(rpk.i[rpk.i > 0] ~ 1, family = GA(sigma.link = "log"), control = con)
-full.ln    <- gamlss(rpk.i[rpk.i > 0] ~ 1, family = LOGNO(sigma.link = "log"), control = con)
-full.zinb    <- gamlss(as.integer(rpk.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con)
+full.beta  <- gamlss(tpm.i[tpm.i > 0]/5E+6 ~ 1, family = BE(sigma.link = "log"), control = con)
+full.gamma <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = GA(sigma.link = "log"), control = con)
+full.ln    <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = LOGNO(sigma.link = "log"), control = con)
+full.zinb    <- gamlss(as.integer(tpm.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con)
 
 a1 = param.beta(full.beta);   nm.beta  = names(a1)
 a2 = param.gamma(full.gamma); nm.gamma = names(a2)
@@ -106,7 +108,7 @@ a3 = param.ln(full.ln);       nm.ln    = names(a3)
 # a4 = param.zinb(full.zinb)
 
 gof.beta =
-  matrix(NA, nrow = n.test, ncol = length(a) + 3, 
+  matrix(NA, nrow = n.test, ncol = length(a1) + 3, 
          dimnames = list(i.taxa, c(nm.beta, "zero.prop", "ks.coef", "ks.pval")))
 gof.gamma =
   matrix(NA, nrow = n.test, ncol = length(a2) + 3, 
@@ -116,7 +118,8 @@ gof.ln =
          dimnames = list(i.taxa, c(nm.ln, "zero.prop", "ks.coef", "ks.pval")))
 
 
-for (i in 1:length(i.sample)) {
+for (i in seq_along(i.sample)) {
+  if (i < 190) next
   # update dat.reg with the corresponding otu values.
   j = i.sample[i]
   tpm.i[] <- as.numeric(DataTPM116[j, ])
@@ -126,10 +129,10 @@ for (i in 1:length(i.sample)) {
   # if (mean(dat.reg$composition > 0) < 0.1) next
   
   # fitting
-  full.beta  <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = BE(sigma.link = "log"), control = con)
-  full.gamma <- gamlss(rpk.i[rpk.i > 0] ~ 1, family = GA(sigma.link = "log"), control = con)
-  full.ln    <- gamlss(rpk.i[rpk.i > 0] ~ 1, family = LOGNO(sigma.link = "log"), control = con)
-  full.zinb  <- gamlss(as.integer(rpk.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con)
+  full.beta  <- gamlss(tpm.i[tpm.i > 0]/5E+6 ~ 1, family = BE(sigma.link = "log"), control = con)
+  full.gamma <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = GA(sigma.link = "log"), control = con)
+  full.ln    <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = LOGNO(sigma.link = "log"), control = con)
+  full.zinb  <- gamlss(as.integer(tpm.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con)
   
   gof.beta [i, nm.beta]    = param.beta(full.beta)
   gof.gamma[i, nm.gamma]   = param.gamma(full.gamma)
@@ -137,17 +140,17 @@ for (i in 1:length(i.sample)) {
   gof.beta [i, "zero.prop"]= gof.gamma[i, "zero.prop"] = gof.ln[i, "zero.prop"] = mean(rpk.i == 0)
   
   # KS test for nonzeros / Beta (KS does not allow ties.)
-  tmp.ks <- ks.test(tpm.i[tpm.i > 0], "pbeta", shape1 = gof.beta[i, "alpha"], shape2 = gof.beta[i, "beta"])
+  tmp.ks <- ks.test(tpm.i[tpm.i > 0]/5E+6, "pbeta", shape1 = gof.beta[i, "alpha"], shape2 = gof.beta[i, "beta"])
   gof.beta[i, "ks.coef"] = tmp.ks$statistic %>% as.numeric
   gof.beta[i, "ks.pval"] = tmp.ks$p.value %>% as.numeric
   
   # KS test for nonzeros / Gamma (KS does not allow ties.)
-  tmp.ks <- ks.test(rpk.i[rpk.i > 0], "pGA", mu = gof.gamma[i, "mu"], sigma = gof.gamma[i, "sig"])
+  tmp.ks <- ks.test(tpm.i[tpm.i > 0], "pGA", mu = gof.gamma[i, "mu"], sigma = gof.gamma[i, "sig"])
   gof.gamma[i, "ks.coef"] = tmp.ks$statistic %>% as.numeric
   gof.gamma[i, "ks.pval"] = tmp.ks$p.value %>% as.numeric
   
   # KS test for nonzeros / log-normal (KS does not allow ties.)
-  tmp.ks <- ks.test(rpk.i[rpk.i > 0], "pLOGNO", 
+  tmp.ks <- ks.test(tpm.i[tpm.i > 0], "pLOGNO", 
                     mu = gof.ln[i, "mu"], sigma = gof.ln[i, "sig"])
   gof.ln[i, "ks.coef"] = tmp.ks$statistic %>% as.numeric
   gof.ln[i, "ks.pval"] = tmp.ks$p.value %>% as.numeric
@@ -156,16 +159,16 @@ for (i in 1:length(i.sample)) {
   ## plots
   if (i <= 5) {
   p1  <- 
-    qqplot1(values = tpm.i[tpm.i > 0], ks.pval = gof.beta[i, "ks.pval"],
+    qqplot1(values = tpm.i[tpm.i > 0]/5E+6, ks.pval = gof.beta[i, "ks.pval"],
             pbeta, shape1 = gof.beta[i, "alpha"], shape2 = gof.beta[i, "beta"], title = "Beta")
   p2 <-
-    qqplot1(values = rpk.i[rpk.i > 0], ks.pval = gof.gamma[i, "ks.pval"], 
+    qqplot1(values = tpm.i[tpm.i > 0], ks.pval = gof.gamma[i, "ks.pval"], 
             pGA, mu = gof.gamma[i, "mu"], sigma = gof.gamma[i, "sig"], title = "Gamma")
   p3 <-
-    qqplot1(values = rpk.i[rpk.i > 0], ks.pval = gof.ln[i, "ks.pval"], 
+    qqplot1(values = tpm.i[tpm.i > 0], ks.pval = gof.ln[i, "ks.pval"], 
             pLOGNO, mu = gof.ln[i, "mu"], sigma = gof.ln[i, "sig"], title = "Log-normal")
   p4 <-
-    qqplot.zinb(values = as.integer(rpk.i), estimates = param.zinb(full.zinb))
+    qqplot.zinb(values = as.integer(tpm.i), estimates = param.zinb(full.zinb))
   
   pp <- gridExtra::grid.arrange(p1, p2, p3, p4, 
                                 top = grid::textGrob(paste0("Fitted models for ", taxa.i)))
@@ -215,3 +218,4 @@ gof.ln %>%
   ggplot(aes(zero.prop, ks.pval)) + 
   geom_point() +
   geom_smooth(method = "loess")
+
