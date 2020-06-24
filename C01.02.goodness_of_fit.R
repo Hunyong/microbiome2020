@@ -12,6 +12,7 @@ if (is.na(args[1])|args[1] == "") {
   zoe = as.numeric(args[1])
   nrm = switch(nrm, "1" = "tmp5", "2" = "rpk")
 }
+print(sprintf("zoe %s - %s", zoe, nrm))
 
 ### 0.2 Data
 # Raw data of 118 subjects
