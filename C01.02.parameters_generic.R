@@ -10,7 +10,7 @@ type = "tpm5" #"rpk"
 
 ### 0.2 Data
   # Raw data of 118 subjects
-  gene.marginal.RPK.DRNA <- readRDS("../Data-Processed/data.geneRPK.marginal.DRNA.ZOE1.rds")
+  gene.marginal.RPK.DRNA <- readRDS("../Data-processed/data.geneRPK.marginal.DRNA.ZOE1.rds")
   excluded.subject <- gene.marginal.RPK.DRNA$meta$id %in% c(352, 420)
   DataMeta116 = gene.marginal.RPK.DRNA$meta[!excluded.subject,]
   DataMeta116 <-
@@ -99,13 +99,13 @@ type = "tpm5" #"rpk"
       saveRDS(cond.est, paste0("output/para_selection_est_", model, "_", type,".rds"))
       
       cond.est %>% 
-        filter(theta < 150) %>% 
+        dplyr::filter(theta < 150) %>% 
         ggplot(aes(mu, theta, col = pi)) +
         geom_point() +
         # coord_trans(y = "log", x = "log") +
         facet_grid(disease ~ batch)
       cond.est %>%
-        filter(theta < 150) %>% 
+        dplyr::filter(theta < 150) %>% 
         group_by(group) %>% 
         summarize(mu.mean = mean(mu, na.rm = TRUE),
                   theta.mean = mean(theta, na.rm = TRUE),
@@ -115,9 +115,9 @@ type = "tpm5" #"rpk"
     ### Final para plot for main
     
     ######## p1 (baseline)
-      cond.est.pi3 <- cond.est %>% filter (pi > 0.27 & pi < 0.33)
-      cond.est.pi6 <- cond.est %>% filter (pi > 0.57 & pi < 0.63)
-      cond.est.pi9 <- cond.est %>% filter (pi > 0.87 & pi < 0.93)
+      cond.est.pi3 <- cond.est %>% dplyr::filter (pi > 0.27 & pi < 0.33)
+      cond.est.pi6 <- cond.est %>% dplyr::filter (pi > 0.57 & pi < 0.63)
+      cond.est.pi9 <- cond.est %>% dplyr::filter (pi > 0.87 & pi < 0.93)
       cond.est.pi3$pi_id = 0.3
       cond.est.pi6$pi_id = 0.6
       cond.est.pi9$pi_id = 0.9
@@ -132,7 +132,7 @@ type = "tpm5" #"rpk"
                                                 TeX("$\\pi \\approx 0.9$")))
       # 1st col of parameter selection
       cond.est.all %>%
-        dplyr::filter(mu < 150, theta < 150) %>%
+        dplyr::filter(mu < 50, theta < 50) %>%
         ggplot(aes(mu, theta, shape = group, col = group)) +
         geom_point() +
         scale_color_manual(name = "group",
@@ -161,9 +161,9 @@ type = "tpm5" #"rpk"
                batch = h.batch) %>%
         dplyr::select("batch", "delta_pi", "delta_mu", "delta_theta")
       
-      cond.est.delta.pi12 <- cond.est.delta %>% filter (delta_pi <= 1.2)
-      cond.est.delta.pi15 <- cond.est.delta %>% filter (delta_pi > 1.2 & delta_pi <= 1.5)
-      cond.est.delta.pi20 <- cond.est.delta %>% filter (delta_pi > 1.5 & delta_pi <= 2.0)
+      cond.est.delta.pi12 <- cond.est.delta %>% dplyr::filter (delta_pi <= 1.2)
+      cond.est.delta.pi15 <- cond.est.delta %>% dplyr::filter (delta_pi > 1.2 & delta_pi <= 1.5)
+      cond.est.delta.pi20 <- cond.est.delta %>% dplyr::filter (delta_pi > 1.5 & delta_pi <= 2.0)
       cond.est.delta.pi12$pi_id = 1.2
       cond.est.delta.pi15$pi_id = 1.5
       cond.est.delta.pi20$pi_id = 2.0
@@ -181,12 +181,13 @@ type = "tpm5" #"rpk"
     
     
       cond.est.delta.all %>%
-        dplyr::filter(delta_theta < ifelse(model == "zinb", 100, 30) & delta_mu < 5) %>%
+        dplyr::filter(delta_theta < 50 & delta_mu < 5) %>%
         ggplot(aes(delta_mu, delta_theta, col = batch, shape = batch)) +
         geom_point() +
         scale_shape_manual(name = "batch",values=c(17, 15)) +
         xlab(TeX('$\\delta_\\mu$')) + 
         ylab(TeX('$\\delta_\\theta')) + 
+        ylim(if(model == "zinb") c(0, 50) else c(0, 30)) + xlim(c(1, 5)) +
         ggtitle(TeX("(|$\\delta_{\\mu}$|, |$\\delta_{\\theta}$|, |$\\delta_{\\pi}$|) estimates")) +
         theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
         facet_grid(rows = vars(pi_id_f), labeller = label_parsed) -> p2
@@ -209,9 +210,9 @@ type = "tpm5" #"rpk"
         dplyr::select("disease", "kappa_pi", "kappa_mu", "kappa_theta")
       
       
-      cond.est.kappa.pi12 <- cond.est.kappa %>% filter (kappa_pi <= 1.2)
-      cond.est.kappa.pi15 <- cond.est.kappa %>% filter (kappa_pi > 1.2 & kappa_pi <= 1.5)
-      cond.est.kappa.pi20 <- cond.est.kappa %>% filter (kappa_pi > 1.5 & kappa_pi <= 2.0)
+      cond.est.kappa.pi12 <- cond.est.kappa %>% dplyr::filter (kappa_pi <= 1.2)
+      cond.est.kappa.pi15 <- cond.est.kappa %>% dplyr::filter (kappa_pi > 1.2 & kappa_pi <= 1.5)
+      cond.est.kappa.pi20 <- cond.est.kappa %>% dplyr::filter (kappa_pi > 1.5 & kappa_pi <= 2.0)
       cond.est.kappa.pi12$pi_id = 1.2
       cond.est.kappa.pi15$pi_id = 1.5
       cond.est.kappa.pi20$pi_id = 2.0
@@ -225,12 +226,13 @@ type = "tpm5" #"rpk"
                                                       TeX("$\\kappa_{\\pi} \\in (1.5, 2.0\\]$")))
       
       cond.est.kappa.all %>%
-        dplyr::filter(kappa_theta < ifelse(model == "zinb", 100, 30) & kappa_mu < 5) %>%
+        dplyr::filter(kappa_theta < 50 & kappa_mu < 5) %>%
         ggplot(aes(kappa_mu, kappa_theta, col = disease, shape = disease)) +
         geom_point() +
         scale_shape_manual(name = "disease",values=c(16,1)) +
         xlab(TeX('$\\kappa_\\mu$')) + 
         ylab(TeX('$\\kappa_\\theta')) + 
+        ylim(if(model == "zinb") c(0, 50) else c(0, 30)) + xlim(c(1, 5)) +
         ggtitle(TeX("(|$\\kappa_{\\mu}$|, |$\\kappa_{\\theta}$|, |$\\kappa_{\\pi}$|) estimates")) +
         theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
         facet_grid(rows = vars(pi_id_f), labeller = label_parsed) -> p3

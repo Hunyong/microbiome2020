@@ -133,7 +133,7 @@ if (FALSE) { #example
     # t = observed overdispersion (= var / mean^2)
     # mm = mean(log(x))  // m = exp(mm + sig2/2)
     # sig2 = var(log(x)) // t = var / mean^2 = exp(sig2 - 1)
-    sig2 = log(t) + 1
+    sig2 = log(t + 1)
     mm   = log(m) - sig2/2
     # normal
     rvec = exp(rnorm(n, mean = mm, sd = sqrt(sig2)))
