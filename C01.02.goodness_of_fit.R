@@ -3,14 +3,27 @@ library(dplyr); library(magrittr); library(ggplot2); library(gridExtra)
 library(gamlss)
 source("F00.00.generic.R")
 source("F01.01.base.R")
+args = commandArgs(trailingOnly=TRUE)  # passed from script
+
+if (is.na(args[1])|args[1] == "") {
+  zoe = 2
+  nrm = "tpm5"
+} else {
+  zoe = as.numeric(args[1])
+  nrm = switch(nrm, "1" = "tmp5", "2" = "rpk")
+}
 
 ### 0.2 Data
 # Raw data of 118 subjects
-gene.marginal.RPK.DRNA <- readRDS("../Data-Processed/data.geneRPK.marginal.DRNA.ZOE1.rds")
-excluded.subject <- gene.marginal.RPK.DRNA$meta$id %in% c(352, 420)
-DataMeta116 = gene.marginal.RPK.DRNA$meta[!excluded.subject,]
+if (zoe == 1) {
+  gene.marginal.RPK.DRNA <- readRDS("../Data-Processed/data.geneRPK.marginal.DRNA.ZOE1.rds")
+} else if (zoe == 2) {
+  gene.marginal.RPK.DRNA <- readRDS("../Data-Processed/data.geneRPK.marginal.DRNA.ZOE2.rds")
+}
+excluded.subject <- gene.marginal.RPK.DRNA$meta$id %in% c(352, 420, 10083, 11210, 11259, 11790, 12623)
+DataMeta = gene.marginal.RPK.DRNA$meta[!excluded.subject,]
 RNA     = gene.marginal.RPK.DRNA$otu[,, 2]
-DataRPK116  = RNA[,colnames(RNA) %in% DataMeta116$id]
+DataRPK  = RNA[,colnames(RNA) %in% DataMeta$id]
 n.test   = 1000
 
 
@@ -83,21 +96,22 @@ qqplot.zinb <- function(values, rng = seq(min(values), max(values), by = 1),
 }
 
 
-ST    = apply(DataRPK116, 2, sum)
-mean(ST) # 5,551,718
-DataTPM116 <- t(t(DataRPK116)/ST) * 5E+6
+ST    = apply(DataRPK, 2, sum)
+mean(ST) # 5,551,718 (ZOE1), 21M for ZOE2
+const = if (zoe == 1) 5E+6 else 20E+6
+DataTPM <- t(t(DataRPK)/ST) * const
 
 # screening and sampling
-prev.filter = DataTPM116 %>% apply(1, function(x) mean(x>0)) %>% {which(. >= 0.1)}
+prev.filter = DataTPM %>% apply(1, function(x) mean(x>0)) %>% {which(. >= 0.1)}
 set.seed(1)
 i.sample    = sample(prev.filter, n.test)
-i.taxa      = rownames(DataTPM116)[i.sample]
+i.taxa      = rownames(DataTPM)[i.sample]
 
 # Empty shell
-tpm.i = DataTPM116[i.sample[1], ]
-rpk.i = DataRPK116[i.sample[1], ]
+tpm.i = DataTPM[i.sample[1], ]
+rpk.i = DataRPK[i.sample[1], ]
 con = gamlss.control(n.cyc = 100, trace = FALSE)
-full.beta  <- gamlss(tpm.i[tpm.i > 0]/5E+6 ~ 1, family = BE(sigma.link = "log"), control = con)
+full.beta  <- gamlss(tpm.i[tpm.i > 0]/const ~ 1, family = BE(sigma.link = "log"), control = con)
 full.gamma <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = GA(sigma.link = "log"), control = con)
 full.ln    <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = LOGNO(sigma.link = "log"), control = con)
 full.zinb    <- gamlss(as.integer(tpm.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con)
@@ -119,28 +133,28 @@ gof.ln =
 
 
 for (i in seq_along(i.sample)) {
-  if (i < 190) next
+  # if (i < 101) next
   # update dat.reg with the corresponding otu values.
   j = i.sample[i]
-  tpm.i[] <- as.numeric(DataTPM116[j, ])
-  rpk.i[] <- as.numeric(DataRPK116[j, ])
-  taxa.i  <- rownames(DataTPM116)[j] %>% gsub(" \\(TOTAL\\)", "", .) %>% gsub("\\_", " ", .)
-# name.i  <- names(DataRPK116)[j]
+  tpm.i[] <- as.numeric(DataTPM[j, ])
+  otu.i[] <- if (nrm == "tmp5") tmp.i else as.numeric(DataRPK[j, ])
+  taxa.i  <- rownames(DataTPM)[j] %>% gsub(" \\(TOTAL\\)", "", .) %>% gsub("\\_", " ", .)
+# name.i  <- names(DataRPK)[j]
   # if (mean(dat.reg$composition > 0) < 0.1) next
   
   # fitting
-  full.beta  <- gamlss(tpm.i[tpm.i > 0]/5E+6 ~ 1, family = BE(sigma.link = "log"), control = con)
-  full.gamma <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = GA(sigma.link = "log"), control = con)
-  full.ln    <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = LOGNO(sigma.link = "log"), control = con)
-  full.zinb  <- gamlss(as.integer(tpm.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con)
+  full.beta  <- gamlss(tpm.i[tpm.i > 0]/const ~ 1, family = BE(sigma.link = "log"), control = con)
+  full.gamma <- gamlss(otu.i[otu.i > 0] ~ 1, family = GA(sigma.link = "log"), control = con)
+  full.ln    <- gamlss(otu.i[otu.i > 0] ~ 1, family = LOGNO(sigma.link = "log"), control = con)
+  if (i <= 5) full.zinb  <- try(gamlss(as.integer(otu.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con))
   
   gof.beta [i, nm.beta]    = param.beta(full.beta)
   gof.gamma[i, nm.gamma]   = param.gamma(full.gamma)
   gof.ln[i, nm.ln]      = param.ln(full.ln)
-  gof.beta [i, "zero.prop"]= gof.gamma[i, "zero.prop"] = gof.ln[i, "zero.prop"] = mean(rpk.i == 0)
+  gof.beta [i, "zero.prop"]= gof.gamma[i, "zero.prop"] = gof.ln[i, "zero.prop"] = mean(otu.i == 0)
   
   # KS test for nonzeros / Beta (KS does not allow ties.)
-  tmp.ks <- ks.test(tpm.i[tpm.i > 0]/5E+6, "pbeta", shape1 = gof.beta[i, "alpha"], shape2 = gof.beta[i, "beta"])
+  tmp.ks <- ks.test(tpm.i[tpm.i > 0]/const, "pbeta", shape1 = gof.beta[i, "alpha"], shape2 = gof.beta[i, "beta"])
   gof.beta[i, "ks.coef"] = tmp.ks$statistic %>% as.numeric
   gof.beta[i, "ks.pval"] = tmp.ks$p.value %>% as.numeric
   
@@ -159,7 +173,7 @@ for (i in seq_along(i.sample)) {
   ## plots
   if (i <= 5) {
   p1  <- 
-    qqplot1(values = tpm.i[tpm.i > 0]/5E+6, ks.pval = gof.beta[i, "ks.pval"],
+    qqplot1(values = tpm.i[tpm.i > 0]/const, ks.pval = gof.beta[i, "ks.pval"],
             pbeta, shape1 = gof.beta[i, "alpha"], shape2 = gof.beta[i, "beta"], title = "Beta")
   p2 <-
     qqplot1(values = tpm.i[tpm.i > 0], ks.pval = gof.gamma[i, "ks.pval"], 
@@ -172,7 +186,7 @@ for (i in seq_along(i.sample)) {
   
   pp <- gridExtra::grid.arrange(p1, p2, p3, p4, 
                                 top = grid::textGrob(paste0("Fitted models for ", taxa.i)))
-  ggsave(paste0("figure/C0102QQplot_",i, ".png"), plot = pp)
+  ggsave(paste0("figure/C0102QQplot_zoe", zoe, "_", nrm, "_",i, ".png"), plot = pp)
   }
   if (! i %% 10) {cat("i = ", i, 
                       ", mean.beta.ks.p = ", sprintf("%.5f", mean(gof.beta[, "ks.pval"], na.rm = T)), 
@@ -198,24 +212,30 @@ h3 <-
     annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
 
 hh <- gridExtra::grid.arrange(h1, h2, h3, top = grid::textGrob("KS test p-value histograms "))
-ggsave(paste0("figure/C0102KS-p-Histogram.png"), plot = hh)
+ggsave(paste0("figure/C0102KS_zoe",zoe, "_", nrm, "-p-Histogram_.png"), plot = hh)
 
 
-gof.gamma %>% 
+g1 <- 
+  gof.gamma %>% 
   as.data.frame %>% 
   ggplot(aes(zero.prop, ks.pval)) + 
   geom_point() +
   geom_smooth(method = "loess")
 
-gof.beta %>% 
+g2 <- 
+  gof.beta %>% 
   as.data.frame %>% 
   ggplot(aes(zero.prop, ks.pval)) + 
   geom_point() +
   geom_smooth(method = "loess")
 
-gof.ln %>% 
+g3 <- 
+  gof.ln %>% 
   as.data.frame %>% 
   ggplot(aes(zero.prop, ks.pval)) + 
   geom_point() +
   geom_smooth(method = "loess")
 
+gg <- gridExtra::grid.arrange(g1, g2, g3, top = grid::textGrob("KS test p-value vs zero proportion
+                                                                   \nGamma / Beta / LogNormal"))
+ggsave(paste0("figure/C0102KS_zoe",zoe, "_", nrm, "-p_vs_zero-Histogram_.png"), plot = gg)
