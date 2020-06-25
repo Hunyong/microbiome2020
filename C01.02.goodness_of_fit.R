@@ -10,6 +10,7 @@ if (is.na(args[1])|args[1] == "") {
   nrm = "tpm5"
 } else {
   zoe = as.numeric(args[1])
+  nrm = as.numeric(args[2])
   nrm = switch(nrm, "1" = "tpm5", "2" = "rpk", "3" = "asin")
 }
 print(sprintf("zoe %s - %s", zoe, nrm))
