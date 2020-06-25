@@ -111,7 +111,7 @@ i.taxa      = rownames(DataTPM)[i.sample]
 
 # Empty shell
 tpm.i = DataTPM[i.sample[1], ]
-rpk.i = DataRPK[i.sample[1], ]
+otu.i = DataRPK[i.sample[1], ]
 con = gamlss.control(n.cyc = 100, trace = FALSE)
 full.beta  <- gamlss(tpm.i[tpm.i > 0]/const ~ 1, family = BE(sigma.link = "log"), control = con)
 full.gamma <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = GA(sigma.link = "log"), control = con)
