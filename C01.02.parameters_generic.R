@@ -6,7 +6,7 @@ zero.prob <- function (vec) {mean(vec == 0)}
 
 
 model = "ziln" #"zinb"
-type = "tpm5" #"rpk"
+nrm = "tpm5" #"rpk" "asin"
 
 ### 0.2 Data
   # Raw data of 118 subjects
@@ -26,8 +26,8 @@ type = "tpm5" #"rpk"
   DataTPM116  = t(t(DataRPK116)/ST) * 5E+6
   DataComp    = t(t(DataRPK116)/ST)  # for LB tests
   
-  # Choose dataset and estimators according to the type!
-  Data = switch(type, rpk = DataRPK116, tpm5 = DataTPM116)
+  # Choose dataset and estimators according to the nrm!
+  Data = switch(nrm, rpk = DataRPK116, tpm5 = DataTPM116, asin = asn(DataTPM116))
   rm(gene.marginal.RPK.DRNA, excluded.subject, RNA, DataRPK116, DataTPM116); gc()
   
   estr.ziln = function(yvec) {
@@ -96,7 +96,7 @@ type = "tpm5" #"rpk"
         }) 
       cond.est <- do.call(rbind, cond.est)
       names(cond.est) <- gsub("\\.\\(Intercept\\)", "", names(cond.est))
-      saveRDS(cond.est, paste0("output/para_selection_est_", model, "_", type,".rds"))
+      saveRDS(cond.est, paste0("output/para_selection_est_", model, "_", nrm,".rds"))
       
       cond.est %>% 
         dplyr::filter(theta < 150) %>% 
@@ -243,7 +243,7 @@ type = "tpm5" #"rpk"
         ncol = 3, nrow = 1
       ) -> p
     
-    ggsave(paste0("figure/para_selection_", model, "_", type,".png"),  p,  width = 10, height = 10)#, dpi = 200)
+    ggsave(paste0("figure/para_selection_", model, "_", nrm,".png"),  p,  width = 10, height = 10)#, dpi = 200)
     #dev.off()
   }
   
