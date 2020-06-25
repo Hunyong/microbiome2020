@@ -46,9 +46,9 @@ param.gamma <- function(gamma.obj) {
   # alpha = mu / beta
   return(c(mu = mu, sig = sig))
 }
-param.ln <- function(gamma.obj) {
-  mu = gamma.obj$mu.coefficients %>% as.numeric
-  sig = gamma.obj$sigma.coefficients %>% exp %>% as.numeric
+param.ln <- function(ln.obj) {
+  mu = ln.obj$mu.coefficients %>% as.numeric
+  sig = ln.obj$sigma.coefficients %>% exp %>% as.numeric
   return(c(mu = mu, sig = sig))
 }
 param.zinb <- function(zinb.obj) {

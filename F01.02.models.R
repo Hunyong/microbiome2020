@@ -484,6 +484,7 @@ if (FALSE) {# example
 
 ### 12. DESeq2
 DS2 <- function (data.l) {
+tmp.dat <<- data.l
   require(DESeq2)
   dds <- DESeqDataSetFromMatrix(countData = round(t(data.l[, grepl("^y", names(data.l))]),0),
                                 colData = data.l[, !grepl("^y", names(data.l))],
@@ -492,7 +493,15 @@ DS2 <- function (data.l) {
   # handle the case where all genes have at least one zero.
   geoMeans = apply(cts, 1, function(row) if (all(row == 0)) 0 else exp(mean(log(row[row != 0]))))
   dds2 = estimateSizeFactors(dds, geoMeans = geoMeans)
-  dds3 <- DESeq(dds2)
+  dds3 <- try(DESeq(dds2))
+  if (class(dds3)[1] == "try-error") {
+    dds2 <- estimateDispersionsGeneEst(dds2)
+    dispersions(dds2) <- mcols(dds2)$dispGeneEst
+    dds3 <- try(DESeq(dds2))
+    if (class(dds3)[1] == "try-error") {
+      return(as.matrix(data.frame(Estimate = NA, pval = NA)))
+    }
+  }
   results(dds3)
   res <- results(dds3, name="phenotype_H_vs_D")
   out = matrix(c(res$log2FoldChange, res$pvalue), ncol = 2)

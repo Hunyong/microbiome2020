@@ -1,6 +1,6 @@
 cat("Microbiome - C02.01.simulation-Basic-ijk-batch.R\n")
 
-# args = c(i = 1, j = 1, k = 1, model = 1, perturb = 5, n = 80, save.stat.only = 1, n.gene = 30)
+# args = c(i = 1, j = 1, k = 13, model = 1, perturb = 5, n = 80, save.stat.only = 1, n.gene = 30)
 # args = c(1, 1, 43, 2, 5, 80, 0, 1000)
 args = commandArgs(trailingOnly=TRUE)  # passed from script
 cat("The Command Arg is: ", str(args))
