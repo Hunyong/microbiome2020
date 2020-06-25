@@ -162,12 +162,12 @@ for (i in seq_along(i.sample)) {
   gof.beta[i, "ks.pval"] = tmp.ks$p.value %>% as.numeric
   
   # KS test for nonzeros / Gamma (KS does not allow ties.)
-  tmp.ks <- ks.test(tpm.i[tpm.i > 0], "pGA", mu = gof.gamma[i, "mu"], sigma = gof.gamma[i, "sig"])
+  tmp.ks <- ks.test(otu.i[otu.i > 0], "pGA", mu = gof.gamma[i, "mu"], sigma = gof.gamma[i, "sig"])
   gof.gamma[i, "ks.coef"] = tmp.ks$statistic %>% as.numeric
   gof.gamma[i, "ks.pval"] = tmp.ks$p.value %>% as.numeric
   
   # KS test for nonzeros / log-normal (KS does not allow ties.)
-  tmp.ks <- ks.test(tpm.i[tpm.i > 0], "pLOGNO", 
+  tmp.ks <- ks.test(otu.i[otu.i > 0], "pLOGNO", 
                     mu = gof.ln[i, "mu"], sigma = gof.ln[i, "sig"])
   gof.ln[i, "ks.coef"] = tmp.ks$statistic %>% as.numeric
   gof.ln[i, "ks.pval"] = tmp.ks$p.value %>% as.numeric
@@ -179,10 +179,10 @@ for (i in seq_along(i.sample)) {
     qqplot1(values = tpm.i[tpm.i > 0]/const, ks.pval = gof.beta[i, "ks.pval"],
             pbeta, shape1 = gof.beta[i, "alpha"], shape2 = gof.beta[i, "beta"], title = "Beta")
   p2 <-
-    qqplot1(values = tpm.i[tpm.i > 0], ks.pval = gof.gamma[i, "ks.pval"], 
+    qqplot1(values = otu.i[otu.i > 0], ks.pval = gof.gamma[i, "ks.pval"], 
             pGA, mu = gof.gamma[i, "mu"], sigma = gof.gamma[i, "sig"], title = "Gamma")
   p3 <-
-    qqplot1(values = tpm.i[tpm.i > 0], ks.pval = gof.ln[i, "ks.pval"], 
+    qqplot1(values = otu.i[otu.i > 0], ks.pval = gof.ln[i, "ks.pval"], 
             pLOGNO, mu = gof.ln[i, "mu"], sigma = gof.ln[i, "sig"], title = "Log-normal")
   p4 <-
     qqplot.zinb(values = as.integer(tpm.i), estimates = param.zinb(full.zinb))
