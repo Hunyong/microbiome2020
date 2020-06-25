@@ -25,9 +25,13 @@ nrm = "tpm5" #"rpk" "asin"
   mean(ST) # 5,551,718
   DataTPM116  = t(t(DataRPK116)/ST) * 5E+6
   DataComp    = t(t(DataRPK116)/ST)  # for LB tests
+  if (nrm == "asin") {
+    DataTPM116 = asn(DataTPM116/5E+6) * 5E+6
+    DataComp = asn(DataComp)
+  }
   
   # Choose dataset and estimators according to the nrm!
-  Data = switch(nrm, rpk = DataRPK116, tpm5 = DataTPM116, asin = asn(DataTPM116))
+  Data = if (nrm == "rpk") DataRPK116 else DataTPM116
   rm(gene.marginal.RPK.DRNA, excluded.subject, RNA, DataRPK116, DataTPM116); gc()
   
   estr.ziln = function(yvec) {
