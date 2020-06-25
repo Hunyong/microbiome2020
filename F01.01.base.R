@@ -143,6 +143,8 @@ if (FALSE) { #example
     return(xvec)
   }
   
+  asn <- function(x) asin(sqrt(x)) * 2/pi
+  
   if (FALSE) {
     library(dplyr)
     #rZILN(100, param = c(m = 1, sig = 1, p = 0.5)) %>% {c(mean(.==0), mean(log(.[.>0])))}

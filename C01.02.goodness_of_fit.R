@@ -10,7 +10,7 @@ if (is.na(args[1])|args[1] == "") {
   nrm = "tpm5"
 } else {
   zoe = as.numeric(args[1])
-  nrm = switch(nrm, "1" = "tmp5", "2" = "rpk")
+  nrm = switch(nrm, "1" = "tpm5", "2" = "rpk", "3" = "asin")
 }
 print(sprintf("zoe %s - %s", zoe, nrm))
 
@@ -138,7 +138,8 @@ for (i in seq_along(i.sample)) {
   # update dat.reg with the corresponding otu values.
   j = i.sample[i]
   tpm.i[] <- as.numeric(DataTPM[j, ])
-  otu.i[] <- if (nrm == "tmp5") tmp.i else as.numeric(DataRPK[j, ])
+  if (nrm == "asin") tpm.i = asn(tpm.i / const) * const
+  otu.i[] <- if (nrm == "rpk") {as.numeric(DataRPK[j, ])} else {tpm.i } #tpm5 or asin
   taxa.i  <- rownames(DataTPM)[j] %>% gsub(" \\(TOTAL\\)", "", .) %>% gsub("\\_", " ", .)
 # name.i  <- names(DataRPK)[j]
   # if (mean(dat.reg$composition > 0) < 0.1) next
