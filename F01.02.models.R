@@ -156,7 +156,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       result[[1]]["WRS", l] <- tmp[1,1] #coef.
       result[[2]]["WRS", l] <- tmp[1,2] #pval.
     }
-  } else {cat("KW is skipped")}
+  } else {cat("WRS is skipped")}
   
   #14. (reserved)
   cat("14. Reserved\n")
@@ -439,17 +439,17 @@ Wagner <- function (data, zeroModel = c("logistic", "t.test", "lm"),
   # out = wilcox.test(x = y.D, y = y.H,
   #             alternative = c("two.sided"), correct = TRUE)
   # print(data.nonzero)
-  # print("1. original WRS without batch")
-  # wilcox.test(x = y.D, y = y.H,
+  # print("1. original KW without batch")
+  # kruskal.test(x = y.D, y = y.H,
   #             alternative = c("two.sided"), exact = FALSE, correct = TRUE) %>% print
-  # print("2. modfified WRS without batch")
-  # coin::wilcox_test(y ~ factor(phenotype), data=data.nonzero) %>% print
+  # print("2. modfified KW without batch")
+  # coin::kruskal_test(y ~ factor(phenotype), data=data.nonzero) %>% print
   
   # print("4. t-test WITH batch")
   # lm(y~phenotype+batch, data=data.nonzero) %>% print
   
-  # print("3. modfified WRS WITH batch")
-  W = try(coin::wilcox_test(y ~ factor(phenotype) | factor(batch), data=data.nonzero), silent = suppressWarning) 
+  # print("3. modfified KW WITH batch")
+  W = try(coin::kruskal_test(y ~ factor(phenotype) | factor(batch), data=data.nonzero), silent = suppressWarning) 
   # silent=FALSE causes the slurm-output file size to explode.
   if (any(class(W) %in% "try-error")) {
     W = matrix(NA, 1, 2)
@@ -467,7 +467,6 @@ Wagner <- function (data, zeroModel = c("logistic", "t.test", "lm"),
   
   out = rbind(W, Z, chi2) # nonzero, zero, global
   rownames(out) = c("Wg.nonz", "Wg.zero", "Wg.glob")
-  rownames(out) = c("LB.nonz", "LB.zero", "LB.glob")
   
   return(out)
 }
@@ -485,6 +484,7 @@ if (FALSE) {# example
 
 ### 12. DESeq2
 DS2 <- function (data.l) {
+tmp.dat <<- data.l
   require(DESeq2)
   dds <- DESeqDataSetFromMatrix(countData = round(t(data.l[, grepl("^y", names(data.l))]),0),
                                 colData = data.l[, !grepl("^y", names(data.l))],
@@ -493,7 +493,15 @@ DS2 <- function (data.l) {
   # handle the case where all genes have at least one zero.
   geoMeans = apply(cts, 1, function(row) if (all(row == 0)) 0 else exp(mean(log(row[row != 0]))))
   dds2 = estimateSizeFactors(dds, geoMeans = geoMeans)
-  dds3 <- DESeq(dds2)
+  dds3 <- try(DESeq(dds2))
+  if (class(dds3)[1] == "try-error") {
+    dds2 <- estimateDispersionsGeneEst(dds2)
+    dispersions(dds2) <- mcols(dds2)$dispGeneEst
+    dds3 <- try(DESeq(dds2))
+    if (class(dds3)[1] == "try-error") {
+      return(as.matrix(data.frame(Estimate = NA, pval = NA)))
+    }
+  }
   results(dds3)
   res <- results(dds3, name="phenotype_H_vs_D")
   out = matrix(c(res$log2FoldChange, res$pvalue), ncol = 2)

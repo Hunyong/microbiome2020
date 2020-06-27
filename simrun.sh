@@ -7,6 +7,8 @@ for l in {1..3}; do # ZINB, ZIG, ZILN
       if [[ "$l" = 3 ]]; then
         sbatch --time=5:00:00 2run-code.sh 0 $j $k $l 2.5 80;
         sbatch --time=25:00:00 2run-code.sh 0 $j $k $l 2.5 400;
+        sbatch --time=5:00:00 2run-code.sh 0 $j $k $l 0 80;
+        sbatch --time=25:00:00 2run-code.sh 0 $j $k $l 0 400;
       fi;
     done; 
   done; 
