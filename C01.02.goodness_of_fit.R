@@ -153,7 +153,7 @@ for (i in seq_along(i.sample)) {
   
   gof.beta [i, nm.beta]    = param.beta(full.beta)
   gof.gamma[i, nm.gamma]   = param.gamma(full.gamma)
-  gof.ln[i, nm.ln]      = param.ln(full.ln)
+  gof.ln[i, nm.ln]         = param.ln(full.ln)
   gof.beta [i, "zero.prop"]= gof.gamma[i, "zero.prop"] = gof.ln[i, "zero.prop"] = mean(otu.i == 0)
   
   # KS test for nonzeros / Beta (KS does not allow ties.)
@@ -198,47 +198,72 @@ for (i in seq_along(i.sample)) {
 }
 
 
-h1 <-
-  gof.beta[, "ks.pval"] %>% data.frame(x = .) %>% ggplot(aes(x)) + 
-    geom_histogram(binwidth = 0.01) + ggtitle("KS p-value histogram for Beta distribution") +
-    geom_vline(xintercept = 0.05, col = "red") + 
-    annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.beta[, "ks.pval"] < 0.05)))
-h2 <-
-  gof.ln[, "ks.pval"] %>% data.frame(x = .) %>% ggplot(aes(x)) + 
-    geom_histogram(binwidth = 0.01) + ggtitle("KS p-value histogram for Log-normal distribution") +
-    geom_vline(xintercept = 0.05, col = "red") + 
-    annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.ln[, "ks.pval"] < 0.05)))
-h3 <-
-  gof.gamma[, "ks.pval"] %>% data.frame(x = .) %>% ggplot(aes(x)) + 
-    geom_histogram(binwidth = 0.01) + ggtitle("KS p-value histogram for Gamma distribution") +
-    geom_vline(xintercept = 0.05, col = "red") + 
-    annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
+saveRDS(list(beta = gof.beta, gamma = gof.gamma, ln = gof.ln),
+        paste0("output/gof_zoe", zoe, "_", nrm, ".rds"))
 
-hh <- gridExtra::grid.arrange(h1, h2, h3, top = grid::textGrob("KS test p-value histograms "))
-ggsave(paste0("figure/C0102KS_zoe",zoe, "_", nrm, "-p-Histogram_.png"), plot = hh)
+if (0) {
+  for (zoe in 1:2) {
+    gof.total <- NULL
+    for (nrm in c("rpk", "tpm5", "asn")) {
+      nrm2 = switch(nrm, "rpk" = "RPK", "tpm5" = "TPM", "asn" = "arcsin")
+      gof <- readRDS(paste0("output/gof_zoe", zoe, "_", nrm, ".rds"))
+      gof.total <- 
+        rbind(gof.total,
+              gof.beta[, "ks.pval"] %>% data.frame(pval = ., distribution = "Beta", nrm = nrm2),
+              gof.ln[, "ks.pval"] %>% data.frame(pval = ., distribution = "Log-normal", nrm = nrm2),
+              gof.gamma[, "ks.pval"] %>% data.frame(pval = ., distribution = "Gamma", nrm = nrm2))
+    }
+    gof.total %>% 
+      ggplot(aes(pval)) + 
+      facet_grid(distribution ~ nrm) + 
+      geom_histogram(binwidth = 0.01) + 
+      ggtitle("Kolmogorov-Smirnov test p-value histogram for Beta, Log-normal and Gamma distribution") +
+      geom_vline(xintercept = 0.05, col = "red") + 
+      annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
+    ggsave(paste0("figure/C0102KS_zoe",zoe, "-p-Histogram_.png"))
+  }
+}
 
-
-g1 <- 
-  gof.gamma %>% 
-  as.data.frame %>% 
-  ggplot(aes(zero.prop, ks.pval)) + 
-  geom_point() +
-  geom_smooth(method = "loess")
-
-g2 <- 
-  gof.beta %>% 
-  as.data.frame %>% 
-  ggplot(aes(zero.prop, ks.pval)) + 
-  geom_point() +
-  geom_smooth(method = "loess")
-
-g3 <- 
-  gof.ln %>% 
-  as.data.frame %>% 
-  ggplot(aes(zero.prop, ks.pval)) + 
-  geom_point() +
-  geom_smooth(method = "loess")
-
-gg <- gridExtra::grid.arrange(g1, g2, g3, top = grid::textGrob("KS test p-value vs zero proportion
-                                                                   \nGamma / Beta / LogNormal"))
-ggsave(paste0("figure/C0102KS_zoe",zoe, "_", nrm, "-p_vs_zero-Histogram_.png"), plot = gg)
+# h1 <-
+#   gof.beta[, "ks.pval"] %>% data.frame(x = .) %>% ggplot(aes(x)) + 
+#     geom_histogram(binwidth = 0.01) + ggtitle("KS p-value histogram for Beta distribution") +
+#     geom_vline(xintercept = 0.05, col = "red") + xlab("p-values of the Kolmogorov-Smirnov tests")
+#     annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.beta[, "ks.pval"] < 0.05)))
+# h2 <-
+#   gof.ln[, "ks.pval"] %>% data.frame(x = .) %>% ggplot(aes(x)) + 
+#     geom_histogram(binwidth = 0.01) + ggtitle("KS p-value histogram for Log-normal distribution") +
+#     geom_vline(xintercept = 0.05, col = "red") + 
+#     annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.ln[, "ks.pval"] < 0.05)))
+# h3 <-
+#   gof.gamma[, "ks.pval"] %>% data.frame(x = .) %>% ggplot(aes(x)) + 
+#     geom_histogram(binwidth = 0.01) + ggtitle("KS p-value histogram for Gamma distribution") +
+#     geom_vline(xintercept = 0.05, col = "red") + 
+#     annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
+# hh <- gridExtra::grid.arrange(h1, h2, h3, top = grid::textGrob("KS test p-value histograms "))
+# ggsave(paste0("figure/C0102KS_zoe",zoe, "_", nrm, "-p-Histogram_.png"), plot = hh)
+#
+#
+# g1 <- 
+#   gof.gamma %>% 
+#   as.data.frame %>% 
+#   ggplot(aes(zero.prop, ks.pval)) + 
+#   geom_point() +
+#   geom_smooth(method = "loess")
+# 
+# g2 <- 
+#   gof.beta %>% 
+#   as.data.frame %>% 
+#   ggplot(aes(zero.prop, ks.pval)) + 
+#   geom_point() +
+#   geom_smooth(method = "loess")
+# 
+# g3 <- 
+#   gof.ln %>% 
+#   as.data.frame %>% 
+#   ggplot(aes(zero.prop, ks.pval)) + 
+#   geom_point() +
+#   geom_smooth(method = "loess")
+# 
+# gg <- gridExtra::grid.arrange(g1, g2, g3, top = grid::textGrob("KS test p-value vs zero proportion
+#                                                                    \nGamma / Beta / LogNormal"))
+# ggsave(paste0("figure/C0102KS_zoe",zoe, "_", nrm, "-p_vs_zero-Histogram_.png"), plot = gg)
