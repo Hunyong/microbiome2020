@@ -6,7 +6,7 @@ source("F01.01.base.R")
 args = commandArgs(trailingOnly=TRUE)  # passed from script
 
 if (is.na(args[1])|args[1] == "") {
-  zoe = 2
+  zoe = 1
   nrm = "tpm5"
 } else {
   zoe = as.numeric(args[1])
@@ -58,6 +58,14 @@ param.zinb <- function(zinb.obj) {
   return(c(mu = mu, sig = sig, pi = pi))
 }
 
+param.zinb2 <- function(zinb.obj) {
+  if (class(zinb.obj)[1] != "zeroinfl") stop("Designed only for zeroinfl object.")
+  mu  = zinb.obj$coefficients$count %>% exp %>% as.numeric
+  sig = zinb.obj$theta %>% as.numeric
+  pi  = zinb.obj$coefficients$zero %>% plogis %>% as.numeric
+  return(c(mu = mu, sig = sig, pi = pi))
+}
+
 qqplot1 <- function(values, distnFn, ks.pval, ..., title = "Beta", taxa = NULL) {
   values = sort(values)
   pval   = distnFn(values, ...)
@@ -94,7 +102,7 @@ qqplot.zinb <- function(values, rng = seq(min(values), max(values), by = 1),
     xlab("counts") + 
     ylab("cumulative distribution") +
     theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-    ggtitle(paste0("Empirical (bars) v.s. model (red line) CDF", taxa)) + theme_bw()
+    ggtitle(paste0("Empirical (bars) v.s. model (red line) CDF under ZINB distribution", taxa)) + theme_bw()
 }
 
 
@@ -116,7 +124,8 @@ con = gamlss.control(n.cyc = 100, trace = FALSE)
 full.beta  <- gamlss(tpm.i[tpm.i > 0]/const ~ 1, family = BE(sigma.link = "log"), control = con)
 full.gamma <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = GA(sigma.link = "log"), control = con)
 full.ln    <- gamlss(tpm.i[tpm.i > 0] ~ 1, family = LOGNO(sigma.link = "log"), control = con)
-full.zinb    <- gamlss(as.integer(tpm.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con)
+# full.zinb    <- gamlss(as.integer(tpm.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con)
+full.zinb    <- zeroinfl(as.integer(tpm.i) ~ 1, dist = "negbin")
 
 a1 = param.beta(full.beta);   nm.beta  = names(a1)
 a2 = param.gamma(full.gamma); nm.gamma = names(a2)
@@ -149,7 +158,8 @@ for (i in seq_along(i.sample)) {
   full.beta  <- gamlss(tpm.i[tpm.i > 0]/const ~ 1, family = BE(sigma.link = "log"), control = con)
   full.gamma <- gamlss(otu.i[otu.i > 0] ~ 1, family = GA(sigma.link = "log"), control = con)
   full.ln    <- gamlss(otu.i[otu.i > 0] ~ 1, family = LOGNO(sigma.link = "log"), control = con)
-  if (i <= 5) full.zinb  <- try(gamlss(as.integer(otu.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con))
+  # if (i <= 5) full.zinb  <- try(gamlss(as.integer(otu.i) ~ 1, family = ZINBI(sigma.link = "log"), control = con))
+  if (i <= 5) full.zinb  <- try(zeroinfl(as.integer(otu.i) ~ 1, dist = "negbin"))
   
   gof.beta [i, nm.beta]    = param.beta(full.beta)
   gof.gamma[i, nm.gamma]   = param.gamma(full.gamma)
@@ -185,11 +195,12 @@ for (i in seq_along(i.sample)) {
     qqplot1(values = otu.i[otu.i > 0], ks.pval = gof.ln[i, "ks.pval"], 
             pLOGNO, mu = gof.ln[i, "mu"], sigma = gof.ln[i, "sig"], title = "Log-normal")
   p4 <-
-    qqplot.zinb(values = as.integer(tpm.i), estimates = param.zinb(full.zinb))
+    qqplot.zinb(values = as.integer(tpm.i), estimates = param.zinb2(full.zinb))
   
   pp <- gridExtra::grid.arrange(p1, p2, p3, p4, 
                                 top = grid::textGrob(paste0("Fitted models for ", taxa.i)))
-  ggsave(paste0("figure/C0102QQplot_zoe", zoe, "_", nrm, "_",i, ".png"), plot = pp)
+  ggsave(paste0("figure/C0102QQplot_zoe", zoe, "_", nrm, "_",i, ".png"), plot = pp,
+         width = 12, height = 9)
   }
   if (! i %% 10) {cat("i = ", i, 
                       ", mean.beta.ks.p = ", sprintf("%.5f", mean(gof.beta[, "ks.pval"], na.rm = T)), 
@@ -204,22 +215,31 @@ saveRDS(list(beta = gof.beta, gamma = gof.gamma, ln = gof.ln),
 if (0) {
   for (zoe in 1:2) {
     gof.total <- NULL
-    for (nrm in c("rpk", "tpm5", "asn")) {
-      nrm2 = switch(nrm, "rpk" = "RPK", "tpm5" = "TPM", "asn" = "arcsin")
+    for (nrm in c("rpk", "tpm5", "asin")) {
+      nrm2 = switch(nrm, "rpk" = "RPK", "tpm5" = "TPM", "asin" = "arcsin")
       gof <- readRDS(paste0("output/gof_zoe", zoe, "_", nrm, ".rds"))
       gof.total <- 
         rbind(gof.total,
-              gof.beta[, "ks.pval"] %>% data.frame(pval = ., distribution = "Beta", nrm = nrm2),
-              gof.ln[, "ks.pval"] %>% data.frame(pval = ., distribution = "Log-normal", nrm = nrm2),
-              gof.gamma[, "ks.pval"] %>% data.frame(pval = ., distribution = "Gamma", nrm = nrm2))
+              gof$beta[, "ks.pval"] %>% data.frame(pval = ., distribution = "Beta", nrm = nrm2),
+              gof$ln[, "ks.pval"] %>% data.frame(pval = ., distribution = "Log-normal", nrm = nrm2),
+              gof$gamma[, "ks.pval"] %>% data.frame(pval = ., distribution = "Gamma", nrm = nrm2))
     }
+    gof.stat <- 
+      aggregate(pval ~ distribution + nrm, data = gof.total, 
+                FUN = function(s) mean(s < 0.05, na.rm = TRUE)) %>% 
+      mutate(reject = paste0("%(p < 0.05) = ", signif(pval, 2)), 
+             pval = 0.5, count = if (zoe == 1) 20 else 100,
+             reject = ifelse(reject == "%(p < 0.05) = 0", "%(p < 0.05) < 0.001", reject))
     gof.total %>% 
+      mutate(nrm = factor(nrm, levels = c("RPK", "TPM", "arcsin"))) %>% 
       ggplot(aes(pval)) + 
       facet_grid(distribution ~ nrm) + 
       geom_histogram(binwidth = 0.01) + 
-      ggtitle("Kolmogorov-Smirnov test p-value histogram for Beta, Log-normal and Gamma distribution") +
+      # ggtitle("Kolmogorov-Smirnov test p-value histogram for Beta, Log-normal and Gamma distribution") +
+      xlab("KS test p-values") + ggtitle(if (zoe == 1) "(A) ZOE 1.0 (n = 116)" else "(A) ZOE 2.0 (n = 297)") + 
       geom_vline(xintercept = 0.05, col = "red") + 
-      annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
+      geom_text(data = gof.stat, aes(pval, count, label = reject))
+      # annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
     ggsave(paste0("figure/C0102KS_zoe",zoe, "-p-Histogram_.png"))
   }
 }
