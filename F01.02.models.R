@@ -529,7 +529,7 @@ WRS <- function (data) {
 }
 
 ### 14. metagenomeSeq
-mgs <- function (data) {
+mgs.base <- function (data) {
   
   require (metagenomeSeq)
   
@@ -559,4 +559,15 @@ mgs <- function (data) {
   colnames(mgsRes) = c("Estimate", "pval")
   
   return(mgsRes)
+}
+mgs <- function(data) {
+  tmp <- try(mgs.base(data))
+  if (class(tmp)[1] == "try-error") {
+    name = names(data)
+    #print(305)
+    gene = which(grepl("y\\.", name))
+    gene.name = gsub("y\\.", "", name[gene])
+    return(matrix(NA, length(gene), 2, dimnames= list(gene.name, c("Estimate", "pval"))))
+  }
+  tmp
 }
