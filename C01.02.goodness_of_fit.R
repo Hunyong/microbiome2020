@@ -223,6 +223,7 @@ if (0) {
               gof$beta[, "ks.pval"] %>% data.frame(pval = ., distribution = "Beta", nrm = nrm2),
               gof$ln[, "ks.pval"] %>% data.frame(pval = ., distribution = "Log-normal", nrm = nrm2),
               gof$gamma[, "ks.pval"] %>% data.frame(pval = ., distribution = "Gamma", nrm = nrm2))
+      
     }
     gof.stat <- 
       aggregate(pval ~ distribution + nrm, data = gof.total, 
