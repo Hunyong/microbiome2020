@@ -10,7 +10,7 @@ fullplot <- function(size,model)
                      zig = parameterLN2, 
                      ziln = parameterLN2)
   k.index = dim(parameter)[1]
-  param.k = apply(parameter[k.index,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))
+  param.k = apply(parameter[,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))
   ylim = c(0,1)
   
   
@@ -20,22 +20,29 @@ fullplot <- function(size,model)
     
     for(j in 1:5)
     {
+      cat("i= ",i,"j= ",j, "\n")
+      
       for(k in 1:k.index)
       {
-        result <- readRDS(paste0("stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
+        result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
         result.stat <- data.frame(result$stat)
         
-        tmp <- result.stat%>% mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,"i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),"effect" = as.character(result$setting$delta[4]))%>%dplyr::select("LB","LN","MAST","KW","KW-II","DESeq2","i","j","k","batch_f","effect")
+        tmp <- 
+          result.stat %>% 
+          mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
+                  "i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),
+                  "effect" = as.character(result$setting$delta[4])) %>%
+          dplyr::select(LB, LN, MAST, KW, `KW-II`, DESeq2, MGS, i, j, k, batch_f, effect)
         
         res <- rbind(res,tmp[1,])
       }
     }
   }
-  res <- res %>% gather(key = "method", value = "p.value",`LB`,`LN`,`MAST`,`KW`,`KW-II`,`DESeq2`)
+  res <- res %>% gather(key = "method", value = "p.value",`LB`,`LN`,`MAST`,`KW`,`KW-II`,`DESeq2`, `MGS`)
   
   res$method_f = factor(res$method,
-                             levels = c("LN", "LB", "MAST", "KW", "KW-II", "DESeq2"),
-                             labels = c("LN", "LB", "MAST", "KW", "KW-II", "DESeq2"))
+                             levels = c("LN", "LB", "MAST", "KW", "KW-II", "DESeq2", "MGS"),
+                             labels = c("LN", "LB", "MAST", "KW", "KW-II", "DESeq2", "MGS"))
   res$effect_f = factor(res$effect,
                              levels = c("Effect_null", "Effect_mu(D>H)", 
                                         "Effect_theta(D>H)", "Effect_pi(D<H)",
@@ -63,6 +70,9 @@ fullplot <- function(size,model)
                                        "K3 (1, 1, -1)",
                                        "K4 (0.5, -0.5, -0.5)",
                                        "K5 (1, -1, -1)"))
+# res.tmp <<- res
+  res[res$method == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
+# res.tmp2 <<- res
   res %>%
     ggplot(aes(factor(k), p.value,fill = batch_f)) +
     geom_bar(stat="identity", position=position_dodge()) +
@@ -83,25 +93,28 @@ fullplot <- function(size,model)
   p
 }
 
+#width = 32, height = 16
+pn1 <- fullplot(80,model="ziln")
+ggsave(file="figure/ziln_full_80.png",pn1,width = 10,height = 7)
+pn2 <- fullplot(400,model="ziln")
+ggsave(file="figure/ziln_full_400.png",pn2,width = 10,height = 7)
+
+
 p1 <- fullplot(80,model="zinb")
-ggsave(file="zinb_full_80.png",p1,width = 32,height = 16)
+ggsave(file="figure/zinb_full_80.png",p1,width = 10,height = 7)
 p2 <- fullplot(400,model="zinb")
-ggsave(file="zinb_full_400.png",p2,width = 32,height = 16)
+ggsave(file="figure/zinb_full_400.png",p2,width = 10,height = 7)
 
 pp1 <- fullplot(80,model="zig")
-ggsave(file="zig_full_80.png",pp1,width = 32,height = 16)
+ggsave(file="figure/zig_full_80.png",pp1,width = 10,height = 7)
 pp2 <- fullplot(400,model="zig")
-ggsave(file="zig_full_400.png",pp2,width = 32,height = 16)
-
-pn1 <- fullplot(80,model="ziln")
-ggsave(file="ziln_full_80.png",pn1,width = 32,height = 16)
-pn2 <- fullplot(400,model="ziln")
-ggsave(file="ziln_full_400.png",pn2,width = 32,height = 16)
+ggsave(file="figure/zig_full_400.png",pp2,width = 10,height = 7)
 
 
 ####power plot####
 
-powerplot <- function(model,size)
+powerplot <- function(model,size, width = 20, height=12, 
+                      fn = paste0("figure/", model,"_power_size",size,".png"))
 {
   parameter = switch(model, 
                      zinb = parameterNB2, 
@@ -120,19 +133,30 @@ powerplot <- function(model,size)
     {
       for(k in k.index)
       {
-        result <- readRDS(paste0("stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
+        cat("i= ",i,"j= ",j,"k= ",k, "\n")
+        result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
         result.stat <- data.frame(result$stat)
         
-        tmp <- result.stat%>% mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,"i" = i,"j" = j,"k" = k,"batch" = as.character(result$setting$kappa[4]),"effect" = as.character(result$setting$delta[4]))%>%dplyr::select("LB","LN","MAST","KW","KW-II","DESeq2","i","j","k","batch","effect")
+        tmp <- 
+          result.stat%>% 
+          mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
+                  "i" = i,"j" = j,"k" = k,
+                  "batch" = as.character(result$setting$kappa[4]),
+                  "effect" = as.character(result$setting$delta[4]))%>%
+          dplyr::select("LB","LN","MAST","KW","KW-II","DESeq2","MGS", "i","j","k","batch","effect")
         
         res3 <- rbind(res3,tmp[1,])
       }
     }
   }
-  res3 <- res3 %>% gather(key = "method", value = "p.value",`LB`,`LN`,`MAST`,`KW`,`KW-II`,`DESeq2`)
+  res3[res3$method_f == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
+  
+  res3 <- res3 %>% 
+    gather(key = "method", value = "p.value",
+           `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DESeq2`, `MGS`)
   res3$method_f = factor(res3$method,
-                         levels = c("LN", "LB", "MAST", "KW", "KW-II","DESeq2"),
-                         labels = c("LN", "LB", "MAST", "KW", "KW-II","DESeq2"))
+                         levels = c("LN", "LB", "MAST", "KW", "KW-II","DESeq2", "MGS"),
+                         labels = c("LN", "LB", "MAST", "KW", "KW-II","DESeq2", "MGS"))
   res3$batch_f = factor(res3$batch,
                         levels = c("no batch effect", 
                                    "large(+,+,-) batch effect",
@@ -148,6 +172,7 @@ powerplot <- function(model,size)
                                     TeX("D4($\\pi_D$<$\\pi_{H}$)"),
                                     TeX("D6($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
                                     TeX("D8($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)")))
+  
   res3 %>%
     ggplot(aes(factor(k), p.value,fill = batch_f)) +
     geom_bar(stat="identity", position=position_dodge()) +
@@ -162,16 +187,28 @@ powerplot <- function(model,size)
     ylab("rejection rate") +
     facet_grid(cols = vars(method_f), rows = vars(effect_f), labeller = label_parsed) +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> p
-  ggsave(file = paste0(model,"_power_size",size,".png"), p, width = 20, height=12)
+  ggsave(file = fn, p, width = width, height= height)
   p
   
 }
 
 powerplot(model = "ziln",size =400)
-
 powerplot(model = "ziln",size =80)
+
+powerplot(model = "ziln",size =400, width = 10, height = 7, 
+          fn = paste0("figure/ziln_power_size400_2.png"))
+powerplot(model = "ziln",size =80, width = 10, height = 7, 
+          fn = paste0("figure/ziln_power_size80_2.png"))
 
 powerplot(model = "zig",size =400)
 powerplot(model = "zig",size =80)
+powerplot(model = "zig",size =400, width = 10, height = 7, 
+          fn = paste0("figure/zig_power_size400_2.png"))
+powerplot(model = "zig",size =80, width = 10, height = 7, 
+          fn = paste0("figure/zig_power_size80_2.png"))
 powerplot(model = "zinb",size =400)
 powerplot(model = "zinb",size =80)
+powerplot(model = "zinb",size =400, width = 10, height = 7, 
+          fn = paste0("figure/zinb_power_size400_2.png"))
+powerplot(model = "zinb",size =80, width = 10, height = 7, 
+          fn = paste0("figure/zinb_power_size80_2.png"))
