@@ -1,6 +1,6 @@
 library(tidyverse)
 library(latex2exp)
-load("micro.RData")
+source("C02.01.simulation.setup.R")
 
 pertplot <- function(size)
 {
