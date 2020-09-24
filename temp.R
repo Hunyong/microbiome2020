@@ -1,4 +1,4 @@
-source("C01.02.simulation.setup.R"); i=10;j=1;k=49;model=1;perturb=5;n=80;save.stat.only=TRUE;n.gene = 1000
+source("C01.02.simulation.setup.R"); i=2;j=3;k=27;model=3;perturb=5;n=400;save.stat.only=TRUE;n.gene = 1000
 
 if (is.na(save.stat.only)) save.stat.only = TRUE
 if (is.na(n.gene)) n.gene = 1000
