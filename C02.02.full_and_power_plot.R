@@ -1,6 +1,6 @@
 library(tidyverse)
 library(latex2exp)
-source("C02.01.simulation.setup.R")
+source("C01.02.simulation.setup.R")
 
 fullplot <- function(size,model)
 {
@@ -172,6 +172,7 @@ powerplot <- function(model,size, width = 20, height=12,
                                     TeX("D4($\\pi_D$<$\\pi_{H}$)"),
                                     TeX("D6($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
                                     TeX("D8($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)")))
+  res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
   
   res3 %>%
     ggplot(aes(factor(k), p.value,fill = batch_f)) +
