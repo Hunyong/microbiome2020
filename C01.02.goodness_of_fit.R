@@ -237,7 +237,7 @@ if (0) {
       facet_grid(distribution ~ nrm) + 
       geom_histogram(binwidth = 0.01) + 
       # ggtitle("Kolmogorov-Smirnov test p-value histogram for Beta, Log-normal and Gamma distribution") +
-      xlab("KS test p-values") + ggtitle(if (zoe == 1) "(A) ZOE 1.0 (n = 116)" else "(A) ZOE 2.0 (n = 297)") + 
+      xlab("KS test p-values") + ggtitle(if (zoe == 1) "A. ZOE 1.0 (n = 116)" else "B. ZOE 2.0 (n = 297)") + 
       geom_vline(xintercept = 0.05, col = "red") + 
       geom_text(data = gof.stat, aes(pval, count, label = reject))
       # annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
