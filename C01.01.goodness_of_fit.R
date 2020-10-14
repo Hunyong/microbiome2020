@@ -27,7 +27,7 @@ excluded.subject <- gene.marginal.RPK.DRNA$meta$id %in% c(352, 420, 10083, 11210
 DataMeta = gene.marginal.RPK.DRNA$meta[!excluded.subject,]
 RNA     = gene.marginal.RPK.DRNA$otu[,, 2]
 DataRPK  = RNA[,colnames(RNA) %in% DataMeta$id]
-n.test   = 1000
+n.test   = 300
 
 
 rm(gene.marginal.RPK.DRNA, excluded.subject, RNA)
@@ -110,11 +110,13 @@ for (i in seq_along(i.sample)) {
                       ", mean.beta.ks.p = ", sprintf("%.5f", mean(gof.beta[, "ks.pval"], na.rm = T)), 
                       " mean.gamma.ks.p = ", sprintf("%.5f", mean(gof.gamma[, "ks.pval"], na.rm = T)), 
                       " mean.ln.ks.p = ", sprintf("%.5f", mean(gof.ln[, "ks.pval"], na.rm = T)), "\n")}
+  saveRDS(list(beta = gof.beta, gamma = gof.gamma, ln = gof.ln),
+          paste0("output/gof_zoe", zoe, "_", nrm, ".tmp.rds"))
 }
-
 
 saveRDS(list(beta = gof.beta, gamma = gof.gamma, ln = gof.ln),
         paste0("output/gof_zoe", zoe, "_", nrm, ".rds"))
+
 
 if (0) {
   for (zoe in 1:2) {
@@ -143,7 +145,8 @@ if (0) {
       # ggtitle("Kolmogorov-Smirnov test p-value histogram for Beta, Log-normal and Gamma distribution") +
       xlab("KS (Lilliefors) test p-values") + ggtitle(if (zoe == 1) "(A) ZOE 1.0 (n = 116)" else "(A) ZOE 2.0 (n = 297)") + 
       geom_vline(xintercept = 0.05, col = "red") + 
-      geom_text(data = gof.stat, aes(pval, count, label = reject))
+      geom_text(data = gof.stat, aes(pval, count, label = reject)) +
+      theme_bw()
       # annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
     ggsave(paste0("figure/C0102KS_zoe",zoe, "-p-Histogram_.png"))
   }
