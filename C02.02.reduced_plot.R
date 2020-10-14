@@ -2,7 +2,7 @@
 
 library(latex2exp)
 library(tidyverse)
-source("C02.01.simulation.setup.R")
+source("C01.02.simulation.setup.R")
 
 reducedplot <- function(model,size) {
   i = 1
@@ -59,15 +59,15 @@ res.tmp <<- res3
     xlab(expression("baseline (" * mu ~ ", " * theta * ", " * pi * ")")) +
     ylab("rejection rate") +
     facet_grid(rows = vars(method_f)) +
-    theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")-> p
+    theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
+    ggtitle(ifelse(size == 80, "A. type-I error (n = 80)", "B. type-I error (n = 400)")) -> p
   
-  ggsave(file = paste0("figure/", model,"_null_size",size,".png"), p, width = 10, height=12)
+  ggsave(file = paste0("figure/", model,"_null_size",size,".png"), p, width = 5, height=6)
   p
 }
 
 
 reducedplot(model = "ziln",size =400)
-
 reducedplot(model = "ziln",size =80)
 
 reducedplot(model = "zig",size =400)

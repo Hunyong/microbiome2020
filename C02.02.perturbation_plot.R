@@ -1,8 +1,8 @@
 library(tidyverse)
 library(latex2exp)
-source("C02.01.simulation.setup.R")
+source("C01.02.simulation.setup.R")
 
-pertplot <- function(size)
+pertplot <- function(model= "ZILN", size)
 {
   j.index <- c(1,5,3)
   k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
@@ -70,7 +70,7 @@ pertplot <- function(size)
     facet_grid(cols = vars(perturbation_f), rows = vars(effect_f), labeller = label_parsed) +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> plb
   
-  ggsave(file = "LB_pert_size",size,".png", plb, width = 20, height=12)
+  ggsave(file = "figure/LB_pert_size",size,".png", plb, width = 20, height=12)
   plb
 }
 
