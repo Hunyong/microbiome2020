@@ -73,7 +73,7 @@ ks.empirical <- function(data, model = "beta", return.est = FALSE,
       })
     cat("\n")
     # print(sort(null.set))
-    lil.pval = mean(result["ks.coef"] > null.set, na.rm = TRUE)
+    lil.pval = 1 - mean(result["ks.coef"] > null.set, na.rm = TRUE)
     result = c(result, lil.pval = lil.pval)
   }
   
