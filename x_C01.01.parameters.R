@@ -56,6 +56,7 @@ mean.var %>%
   xlim(c(0, 100)) + ylim(c(0, 100))
 # ggsave("figure/C0101overdispersion.png")
 
+
 zp.DNA <-
   zero.proportion.DNA %>% 
   data.frame(x = .) %>% 
@@ -108,31 +109,6 @@ zero.proportion %>% mean
 zero.proportion %>% 
   cut(breaks = c(-0.1, 0.5, 0.8, 0.9, 0.95, 0.99, Inf)) %>% 
   table %>% {./length(zero.proportion)}
-
-
-############################################################################################
-# variances of DNA and RNA
-############################################################################################
-variances = data.frame(var.DNA = apply(DataRPKDNA, 1, var), var.RNA = apply(DataRPKRNA, 1, var),
-                       mean.DNA = apply(DataRPKDNA, 1, mean), mean.RNA = apply(DataRPKRNA, 1, mean))
-variances =
-  variances %>% 
-  mutate(disp.DNA = ifelse(mean.DNA < 1e-3, NA, var.DNA/mean.DNA),
-         disp.RNA = ifelse(mean.RNA < 1e-3, NA, var.RNA/mean.RNA),
-         RNAtoDNA = disp.RNA/ disp.DNA)
-variances %>% 
-  filter(var.DNA < 10000, var.RNA < 10000) %>% 
-  ggplot(aes(var.DNA, var.RNA)) + geom_point()
-variances %>% 
-  sample_frac(0.01) %>% 
-  ggplot(aes(disp.DNA, disp.RNA)) + geom_point() + xlim(c(0, 2000)) + ylim(c(0, 2000))
-variances$RNAtoDNA %>% {function(s) mean(s > 1, na.rm=TRUE)}(.)
-
-var.nz <- function(x) var(x[x>0])
-variances.nz = data.frame(var.DNA = apply(DataRPKDNA, 1, var.nz), var.RNA = apply(DataRPKRNA, 1, var.nz))
-variances.nz %>% 
-  filter(var.DNA < 10000, var.RNA < 10000) %>% 
-  ggplot(aes(var.DNA, var.RNA)) + geom_point()
 
 
 
