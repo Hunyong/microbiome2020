@@ -1,30 +1,110 @@
 ### 0.1 library
-library(dplyr); library(magrittr); library(ggplot2); library(gridExtra)
+library(dplyr); library(magrittr); library(ggplot2); library(gridExtra); library(cowplot)
 library(MASS); library(boot); library(pscl); library(R.utils); library(latex2exp)
 source("F00.00.generic.R")
 source("F01.01.base.R")
 
 ### 0.2 Data
+if (zoe == 1) {
+  gene.marginal.RPK.DRNA <- readRDS("../Data-Processed/data.geneRPK.marginal.DRNA.ZOE1.rds")
+} else if (zoe == 2) {
+  gene.marginal.RPK.DRNA <- readRDS("../Data-Processed/data.geneRPK.marginal.DRNA.ZOE2.rds")
+}
+excluded.subject <- gene.marginal.RPK.DRNA$meta$id %in% c(352, 420, 10083, 11210, 11259, 11790, 12623)
+DataMeta = gene.marginal.RPK.DRNA$meta[!excluded.subject,]
+n.test   = 1000
+
 # Raw data of 118 subjects
-gene.marginal.RPK.DRNA <- readRDS("../Data-Processed/data.geneRPK.marginal.DRNA.ZOE1.rds")
-excluded.subject <- gene.marginal.RPK.DRNA$meta$id %in% c(352, 420)
-DataMeta116 = gene.marginal.RPK.DRNA$meta[!excluded.subject,]
 RNA     = gene.marginal.RPK.DRNA$otu[,, 2]
-DataTPM116  = RNA[,colnames(RNA) %in% DataMeta116$id]
-ST    = apply(DataTPM116, 2, sum)
-mean(ST) # 5,551,718
-DataTPM116 <- t(t(DataTPM116)/ST) * 5E+6
-
-rm(gene.marginal.RPK.DRNA, excluded.subject, RNA)
+DNA     = gene.marginal.RPK.DRNA$otu[,, 1]
+DataRPKRNA  = RNA[,colnames(RNA) %in% DataMeta$id]
+DataRPKDNA  = DNA[,colnames(DNA) %in% DataMeta$id]
+ST_RNA    = apply(DataRPKRNA, 2, sum)
+ST_DNA= apply(DataRPKDNA, 2, sum)
+mean(ST_RNA) # 5,551,718
+DataTPM <- t(t(DataRPKRNA)/ST_RNA) * 5E+6
+DataTPMDNA = t(t(DataRPKDNA)/ST_DNA) * 5E+6
+rm(gene.marginal.RPK.DRNA, excluded.subject, RNA, DNA)
 
 ############################################################################################
-# distribution
+# basic statistics and distribution
 ############################################################################################
+dim(DataTPM) # 342,006 genes
+DataRPKRNA %>% apply(2, sum) %>% mean # 5,551,718 average 'total RPKs per sample'
 
 zero.proportion =
-  DataTPM116 %>% 
+  DataRPKRNA %>% 
   apply(1, function(x) mean(x == 0)) 
-zero.proportion %>% hist 
+zero.proportion %>% mean # avg zero proportion = 0.879
+
+zero.proportion.DNA =
+  DataRPKDNA %>% 
+  apply(1, function(x) mean(x == 0)) 
+zero.proportion.DNA %>% mean # avg zero proportion = 0.684
+mean(zero.proportion.DNA <= 0.2) # 16%
+mean(zero.proportion <= 0.2) # 3%
+
+mean.var = 
+  tibble(nz.mean = DataRPKRNA %>% apply(1, function(x) mean(x[x>0])),
+         nz.var =  DataRPKRNA %>% apply(1, function(x)  var(x[x>0])),
+         overdispersion = nz.var/nz.mean^2)
+
+mean.var %>% 
+  sample_frac(0.01) %>% 
+  ggplot(aes(nz.mean, nz.var, col = overdispersion)) + geom_point() + theme_classic() + 
+  xlab("mean") + ylab("variance") +
+  xlim(c(0, 100)) + ylim(c(0, 100))
+# ggsave("figure/C0101overdispersion.png")
+
+
+zp.DNA <-
+  zero.proportion.DNA %>% 
+  data.frame(x = .) %>% 
+  ggplot(aes(x)) + geom_histogram() + theme_classic() + 
+  xlab("proportion of zeros") + ylab("frequency") +
+  scale_x_continuous(breaks = c(0, 0.25, 0.5, 0.6, 0.7, 0.8, 0.9, 1)) +
+  scale_y_continuous(limits = c(0, 1.6e+5)) +
+  theme(axis.text.y=element_text(angle=90, hjust=0.5,vjust=0.5)) +
+  geom_vline(xintercept = 0.9, color = "red", size = 0.2, linetype = "dashed") +
+  annotate(geom = "text", x =  0.95, y = .5e+5 * 1.2, col = "red",
+           label = paste0(round(mean(zero.proportion.DNA >= 0.9) * 100, 0), "%")) +
+  geom_vline(xintercept = 0.8, color = "orange", size = 0.2, linetype = "dashed") +
+  annotate(geom = "text", x =  0.85, y = .5e+5 * .75, col = "orange",
+           label = paste0(round(mean(zero.proportion.DNA >= 0.8) * 100, 0), "%")) +
+  geom_vline(xintercept = 0.7, color = "cadetblue4", size = 0.2, linetype = "dashed") +
+  annotate(geom = "text", x =  0.75, y = .5e+5 * .5, col = "cadetblue4",
+           label = paste0(round(mean(zero.proportion.DNA >= 0.7) * 100, 0), "%")) +
+  geom_vline(xintercept = 0.6, color = "darkslategray", size = 0.2, linetype = "dashed") +
+  annotate(geom = "text", x =  0.65, y = .5e+5 * .35, col = "darkslategray",
+           label = paste0(round(mean(zero.proportion.DNA >= 0.6) * 100, 0), "%"))
+ggsave(zp.DNA, "figure/C0101zeroproportionDNA.png")
+
+zp.RNA <-
+  zero.proportion %>% 
+  data.frame(x = .) %>% 
+  ggplot(aes(x)) + geom_histogram() + theme_classic() + 
+  xlab("proportion of zeros") + ylab(" ") +
+  scale_x_continuous(breaks = c(0, 0.25, 0.5, 0.6, 0.7, 0.8, 0.9, 1)) +
+  scale_y_continuous(limits = c(0, 1.6e+5)) +
+  theme(axis.text.y=element_blank()) +
+  geom_vline(xintercept = 0.9, color = "red", size = 0.2, linetype = "dashed") +
+  annotate(geom = "text", x =  0.95, y = 1e+5 * 1.2, col = "red",
+           label = paste0(round(mean(zero.proportion >= 0.9) * 100, 0), "%")) +
+  geom_vline(xintercept = 0.8, color = "orange", size = 0.2, linetype = "dashed") +
+  annotate(geom = "text", x =  0.85, y = 1e+5 * .75, col = "orange",
+           label = paste0(round(mean(zero.proportion >= 0.8) * 100, 0), "%")) +
+  geom_vline(xintercept = 0.7, color = "cadetblue4", size = 0.2, linetype = "dashed") +
+  annotate(geom = "text", x =  0.75, y = 1e+5 * .5, col = "cadetblue4",
+           label = paste0(round(mean(zero.proportion >= 0.7) * 100, 0), "%")) +
+  geom_vline(xintercept = 0.6, color = "darkslategray", size = 0.2, linetype = "dashed") +
+  annotate(geom = "text", x =  0.65, y = 1e+5 * .35, col = "darkslategray",
+           label = paste0(round(mean(zero.proportion >= 0.6) * 100, 0), "%"))
+ggsave(zp.RNA, "figure/C0101zeroproportion.png")
+
+zp <-
+  plot_grid(zp.DNA, zp.RNA + ylab(NULL), labels = "AUTO", rel_widths = c(1.12, 1), label_x = c(0.2, 0.1))
+save_plot("figure/C0101zeroproportion.png", plot = zp, base_width = 9, base_height = 5)
+
 zero.proportion %>% mean
 zero.proportion %>% 
   cut(breaks = c(-0.1, 0.5, 0.8, 0.9, 0.95, 0.99, Inf)) %>% 
@@ -39,45 +119,45 @@ zero.proportion %>%
 
 
 # # filtering 2 lowly-expressed subjects (352, 420)
-# gene.marginal.RPK.DRNA %>% select(-RPK.352, -RPK.420) -> DataRPK116
-# outcome %>% filter(!id %in% c(352,420)) -> DataMeta116
+# gene.marginal.RPK.DRNA %>% select(-RPK.352, -RPK.420) -> DataRPKRNA
+# outcome %>% filter(!id %in% c(352,420)) -> DataMeta
 # rm(gene.marginal.RPK.RNA, outcome)
 
 # disease groups (0:Healthy, 1:Treated. 2:Diseased)
-HD = which(DataMeta116$cariesfree == 0) #disease
-H0 = which(DataMeta116$cariesfree == 1) #healty
+HD = which(DataMeta$cariesfree == 0) #disease
+H0 = which(DataMeta$cariesfree == 1) #healty
 
-B1 = which(DataMeta116$batch.RNA == "170628")
-B2 = which(DataMeta116$batch.RNA == "170718")
+B1 = which(DataMeta$batch.RNA == "170628")
+B2 = which(DataMeta$batch.RNA == "170718")
 
-H0B1 = which(DataMeta116$ECC == 0 & DataMeta116$batch.RNA == "170628")
-D2B1 = which(DataMeta116$ECC == 2 & DataMeta116$batch.RNA == "170628")
-H0B2 = which(DataMeta116$ECC == 0 & DataMeta116$batch.RNA == "170718")
-D2B2 = which(DataMeta116$ECC == 2 & DataMeta116$batch.RNA == "170718")
+H0B1 = which(DataMeta$ECC == 0 & DataMeta$batch.RNA == "170628")
+D2B1 = which(DataMeta$ECC == 2 & DataMeta$batch.RNA == "170628")
+H0B2 = which(DataMeta$ECC == 0 & DataMeta$batch.RNA == "170718")
+D2B2 = which(DataMeta$ECC == 2 & DataMeta$batch.RNA == "170718")
 
 
 
 if(F){
-  # subject_HD = DataMeta116[ DataMeta116$cariesfree == 0,]
-  # subject_H0 = DataMeta116[ DataMeta116$cariesfree == 1,]
-  # sample_HD = DataTPM116[,colnames(DataTPM116) %in% subject_HD$id]
-  # sample_H0 = DataTPM116[,colnames(DataTPM116) %in% subject_H0$id]
+  # subject_HD = DataMeta[ DataMeta$cariesfree == 0,]
+  # subject_H0 = DataMeta[ DataMeta$cariesfree == 1,]
+  # sample_HD = DataTPM[,colnames(DataTPM) %in% subject_HD$id]
+  # sample_H0 = DataTPM[,colnames(DataTPM) %in% subject_H0$id]
   # 
-  # subject_B1 = DataMeta116[ DataMeta116$batch.RNA == 170628,]
-  # subject_B2 = DataMeta116[ DataMeta116$batch.RNA == 170718,]
-  # sample_B1 = DataTPM116[,colnames(DataTPM116) %in% subject_B1$id]
-  # sample_B2 = DataTPM116[,colnames(DataTPM116) %in% subject_B2$id]
+  # subject_B1 = DataMeta[ DataMeta$batch.RNA == 170628,]
+  # subject_B2 = DataMeta[ DataMeta$batch.RNA == 170718,]
+  # sample_B1 = DataTPM[,colnames(DataTPM) %in% subject_B1$id]
+  # sample_B2 = DataTPM[,colnames(DataTPM) %in% subject_B2$id]
   
-  subject_H1 = DataMeta116[ DataMeta116$cariesfree == 1 & DataMeta116$batch.RNA == "170628",]
-  subject_H2 = DataMeta116[ DataMeta116$cariesfree == 1 & DataMeta116$batch.RNA == "170718",]
-  subject_D1 = DataMeta116[ DataMeta116$cariesfree == 0 & DataMeta116$batch.RNA == "170628",]
-  subject_D2 = DataMeta116[ DataMeta116$cariesfree == 0 & DataMeta116$batch.RNA == "170718",]
+  subject_H1 = DataMeta[ DataMeta$cariesfree == 1 & DataMeta$batch.RNA == "170628",]
+  subject_H2 = DataMeta[ DataMeta$cariesfree == 1 & DataMeta$batch.RNA == "170718",]
+  subject_D1 = DataMeta[ DataMeta$cariesfree == 0 & DataMeta$batch.RNA == "170628",]
+  subject_D2 = DataMeta[ DataMeta$cariesfree == 0 & DataMeta$batch.RNA == "170718",]
   set.seed(1)
-  samp = sample(1:nrow(DataTPM116),1000)
-  sample_H1 = DataTPM116[samp,colnames(DataTPM116) %in% subject_H1$id]
-  sample_H2 = DataTPM116[samp,colnames(DataTPM116) %in% subject_H2$id]
-  sample_D1 = DataTPM116[samp,colnames(DataTPM116) %in% subject_D1$id]
-  sample_D2 = DataTPM116[samp,colnames(DataTPM116) %in% subject_D2$id]
+  samp = sample(1:nrow(DataTPM),1000)
+  sample_H1 = DataTPM[samp,colnames(DataTPM) %in% subject_H1$id]
+  sample_H2 = DataTPM[samp,colnames(DataTPM) %in% subject_H2$id]
+  sample_D1 = DataTPM[samp,colnames(DataTPM) %in% subject_D1$id]
+  sample_D2 = DataTPM[samp,colnames(DataTPM) %in% subject_D2$id]
 }
 #ZINB.ML takes too long
 
@@ -151,21 +231,21 @@ if(F){
 ### 1. parameter estimates from real data (ZINB): baseline parameters
 if (FALSE) {
   param = data.frame(gene.id = NA, mu=NA, theta=NA, pi=NA)
-  n.gene = dim(DataTPM116)[1]
+  n.gene = dim(DataTPM)[1]
   
   tt(1); k=1
   for (i in 1:n.gene) {
     if (i %% 100) next  #only every 100 other genes
     if (!i %% 3000) cat(i," out of ",n.gene, "genes (", round(i/n.gene*100,2),"%), expected time = ",
                         (Sys.time()-time.tmp)/i*n.gene, "minutes.")
-    param[k,] = c(i, DataTPM116[i,-1] %>% round %>% ZINB.ML.time(notation="mtp"))
+    param[k,] = c(i, DataTPM[i,-1] %>% round %>% ZINB.ML.time(notation="mtp"))
     k = k+1
   }
   tt(2)  #14 mins for 2,386 genes
   saveRDS(param, "output/R0101.param.rds")
 } else {
   param <- readRDS("output/R0101.param.rds")
-  n.gene = dim(DataTPM116)[1] 
+  n.gene = dim(DataTPM)[1] 
 }
 
 ## 1.1 resulting figures ####
@@ -175,7 +255,7 @@ param %>% ggplot(aes(mu, theta, col=pi)) + geom_point()
 # parameters without outliers
 param.outlier = which(param$theta > 1e+2)
 param [param.outlier,]
-DataTPM116[119100,-1] %>% as.numeric %>% round %>% hist
+DataTPM[119100,-1] %>% as.numeric %>% round %>% hist
 length(param.outlier) # 714 out of 2,386 genes have theta > 100
 
 param %>% filter(theta<=100, mu<500) %>% ggplot(aes(theta, mu, col=pi)) + geom_point() + ggtitle("theta<100")
@@ -208,12 +288,12 @@ if (FALSE) {
     if (i %% 100) next  #only every 100 other genes
     if (!i %% 3000) cat(i," out of ",n.gene, "genes (", round(i/n.gene*100,2),"%), expected time = ",
                         (Sys.time()-time.tmp)/i*n.gene, "minutes.")
-    param.ECC[k,] = c(i, ZINB.ML.time(DataTPM116[i,H0]),
-                      ZINB.ML.time(DataTPM116[i,T1]), ZINB.ML.time(DataTPM116[i,D2]))
+    param.ECC[k,] = c(i, ZINB.ML.time(DataTPM[i,H0]),
+                      ZINB.ML.time(DataTPM[i,T1]), ZINB.ML.time(DataTPM[i,D2]))
     # filling in pi's with the proportion of zero counts, if the genes are not estimated.
-    if (is.na(param.ECC[k,4])) {param.ECC[k,4] = mean(DataTPM116[i,H0]==0)}
-    if (is.na(param.ECC[k,7])) {param.ECC[k,7] = mean(DataTPM116[i,T1]==0)}
-    if (is.na(param.ECC[k,10])) {param.ECC[k,10] = mean(DataTPM116[i,D2]==0)}
+    if (is.na(param.ECC[k,4])) {param.ECC[k,4] = mean(DataTPM[i,H0]==0)}
+    if (is.na(param.ECC[k,7])) {param.ECC[k,7] = mean(DataTPM[i,T1]==0)}
+    if (is.na(param.ECC[k,10])) {param.ECC[k,10] = mean(DataTPM[i,D2]==0)}
     k = k+1
   }
   tt(2)  # 26 mins for 2,386 genes
@@ -238,14 +318,14 @@ rbind(tmp.NaN, tmp.NA)[,c(2,5,8)]
 # when the few nonzero counts are large numbers, error (NaN)
 # when the few nonzero counts are small numbers, time out (NA)
 # 
-# param.ECC[is.nan(param.ECC[,2]),1] %>% sapply(function(s) {mean(DataTPM116[s,H0+1]==0)})
-# param.ECC[is.nan(param.ECC[,5]),1] %>% sapply(function(s) {mean(DataTPM116[s,T1+1]==0)})
-# param.ECC[is.nan(param.ECC[,8]),1] %>% sapply(function(s) {mean(DataTPM116[s,D2+1]==0)})
+# param.ECC[is.nan(param.ECC[,2]),1] %>% sapply(function(s) {mean(DataTPM[s,H0+1]==0)})
+# param.ECC[is.nan(param.ECC[,5]),1] %>% sapply(function(s) {mean(DataTPM[s,T1+1]==0)})
+# param.ECC[is.nan(param.ECC[,8]),1] %>% sapply(function(s) {mean(DataTPM[s,D2+1]==0)})
 # Seen that most of the NaN are mostly zero counts
-param.ECC[(!is.nan(param.ECC[,2])) & is.na(param.ECC[,2]) ,1] %>% sapply(function(s) {mean(DataTPM116[s, H0]==0)})
-DataTPM116[1200,H0] %>% round %>% sort %>% as.numeric # example of timeout counts
-DataTPM116[2300,H0] %>% round %>% sort %>% as.numeric # example of timeout counts
-DataTPM116[3000,H0] %>% round %>% sort %>% as.numeric # example of timeout counts
+param.ECC[(!is.nan(param.ECC[,2])) & is.na(param.ECC[,2]) ,1] %>% sapply(function(s) {mean(DataTPM[s, H0]==0)})
+DataTPM[1200,H0] %>% round %>% sort %>% as.numeric # example of timeout counts
+DataTPM[2300,H0] %>% round %>% sort %>% as.numeric # example of timeout counts
+DataTPM[3000,H0] %>% round %>% sort %>% as.numeric # example of timeout counts
 
 # NaN and NA are very similar in that there are overwelming # of zero's.
 # -> For those NaN and NA, pi's are filled in with the zero-proportion.
@@ -329,10 +409,10 @@ if (FALSE) {
     if (i %% 100) next  #only every 100 other genes
     if (!i %% 3000) cat(i," out of ",n.gene, "genes (", round(i/n.gene*100,2),"%), expected time = ",
                         (Sys.time()-time.tmp)/i*n.gene, "minutes.")
-    param.bacth[k,] = c(i, ZINB.ML.time(DataTPM116[i,B1]), ZINB.ML.time(DataTPM116[i,B2]))
+    param.bacth[k,] = c(i, ZINB.ML.time(DataTPM[i,B1]), ZINB.ML.time(DataTPM[i,B2]))
     # filling in pi's with the proportion of zero counts, if the genes are not estimated.
-    if (is.na(param.bacth[k,4])) {param.bacth[k,4] = mean(DataTPM116[i,B1]==0)}
-    if (is.na(param.bacth[k,7])) {param.bacth[k,7] = mean(DataTPM116[i,B2]==0)}
+    if (is.na(param.bacth[k,4])) {param.bacth[k,4] = mean(DataTPM[i,B1]==0)}
+    if (is.na(param.bacth[k,7])) {param.bacth[k,7] = mean(DataTPM[i,B2]==0)}
     k = k+1
   }
   tt(2)  # 39 mins for 2,386 genes
@@ -429,13 +509,13 @@ if (FALSE) {
     if (i %% 100) next  #only every 100 other genes
     if (!i %% 3000) cat(i," out of ",n.gene, "genes (", round(i/n.gene*100,2),"%), expected time = ",
                         (Sys.time()-time.tmp)/i*n.gene, "minutes.")
-    param.group[k,] = c(i, ZINB.ML.time(DataTPM116[i,H0B1]), ZINB.ML.time(DataTPM116[i,D2B1]),
-                        ZINB.ML.time(DataTPM116[i,H0B2]), ZINB.ML.time(DataTPM116[i,D2B2]))
+    param.group[k,] = c(i, ZINB.ML.time(DataTPM[i,H0B1]), ZINB.ML.time(DataTPM[i,D2B1]),
+                        ZINB.ML.time(DataTPM[i,H0B2]), ZINB.ML.time(DataTPM[i,D2B2]))
     # filling in pi's with the proportion of zero counts, if the genes are not estimated.
-    if (is.na(param.group[k,4])) {param.group[k,4] = mean(DataTPM116[i,H0B1]==0)}
-    if (is.na(param.group[k,7])) {param.group[k,7] = mean(DataTPM116[i,D2B1]==0)}
-    if (is.na(param.group[k,10])) {param.group[k,10] = mean(DataTPM116[i,H0B2]==0)}
-    if (is.na(param.group[k,13])) {param.group[k,13] = mean(DataTPM116[i,D2B2]==0)}
+    if (is.na(param.group[k,4])) {param.group[k,4] = mean(DataTPM[i,H0B1]==0)}
+    if (is.na(param.group[k,7])) {param.group[k,7] = mean(DataTPM[i,D2B1]==0)}
+    if (is.na(param.group[k,10])) {param.group[k,10] = mean(DataTPM[i,H0B2]==0)}
+    if (is.na(param.group[k,13])) {param.group[k,13] = mean(DataTPM[i,D2B2]==0)}
     k = k+1
   }
   tt(2)  # 39 mins for 2,386 genes
@@ -616,13 +696,13 @@ ggsave(("figure/para_selection_zinb.png"),  p_zinb,  width = 10, height = 10)#, 
 
 ######## exercise
 if (FALSE) {
-  DataTPM116[5,-1] %>% as.numeric %>% round %>% apply(1, ZINB.ML)
-  DataTPM116[5,-1] %>% as.numeric %>% round %>% hist
-  DataTPM116[5,-1] %>% as.numeric %>% round %>% ZINB.ML.time (timeout=1)
-  DataTPM116[6,-1] %>% as.numeric %>% round %>% ZINB.ML.time (timeout=1)
+  DataTPM[5,-1] %>% as.numeric %>% round %>% apply(1, ZINB.ML)
+  DataTPM[5,-1] %>% as.numeric %>% round %>% hist
+  DataTPM[5,-1] %>% as.numeric %>% round %>% ZINB.ML.time (timeout=1)
+  DataTPM[6,-1] %>% as.numeric %>% round %>% ZINB.ML.time (timeout=1)
   
   # running 10 genes for example
-  param = DataTPM116[1:10,-1] %>% round %>% apply(1, ZINB.ML.time) %>% t
+  param = DataTPM[1:10,-1] %>% round %>% apply(1, ZINB.ML.time) %>% t
   param = structure(param, dimnames=list(1:10, c("theta", "mu", "pi")))
   
 }
