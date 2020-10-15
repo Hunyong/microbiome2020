@@ -2,8 +2,8 @@
 # install.packages("BiocManager")
 #BiocManager::install("DESeq2")
 library(BiocManager)
-n.test = 18 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-            #"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DESeq2", "WRS", "MGS", "(Reserved)"
+n.test = 17 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
+            #"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DESeq2", "WRS", "(Reserved)"
 # if(!require(betareg)){
 #   install.packages("betareg")
 # }
@@ -18,7 +18,6 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
                                 LN.skip = FALSE, MAST.skip = FALSE,
                                 KW.skip = FALSE, Wg.skip = FALSE,
                                 De2.skip = FALSE, WRS.skip = FALSE,
-                                MGS.skip = FALSE,
                                 skip.small.n = FALSE) {
   # description
   # data should have y and sampleSum    all n.sample x (n.gene(gene) + 3 (phenotype + batch + sampleSum))
@@ -30,8 +29,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   
   # 0.0 skeleton #empty matrix
   test.names <- c("LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DESeq2", "WRS", "MGS", "(Reserved)")
-  mat.tmp <- matrix(NA, n.test, n.gene, dimnames = list(test.names, NULL)) # n.test=15, n.gene=1000
+                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DESeq2", "WRS", "(Reserved)")
+  mat.tmp <- matrix(NA, n.test, n.gene, dimnames = list(test.names, NULL)) # n.test=14, n.gene=1000
   result <- list(coef = mat.tmp, pval = mat.tmp)
   if (skeleton) {return(result)}
   
@@ -115,8 +114,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     }
   } else {cat("KW is skipped")}
   
-  #9-11. Two-part KW
-  cat("\n9-11. Two-part KW (Wagner)\n l = ")
+  #9-11. Wagner
+  cat("\n9-11. Wagner (2-part)\n l = ")
   if(!Wg.skip){
     for (l in genes) {
       # cat (l," ")
@@ -159,16 +158,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     }
   } else {cat("WRS is skipped")}
   
-  #14. metagenomeSeq
-  cat("14 metagenomeSeq\n")
-  if(!MGS.skip){
-    tmp <- mgs(data)
-    result[[1]]["MGS", ] <- tmp[, "Estimate"] #coef.
-    result[[2]]["MGS", ] <- tmp[, "pval"]     #pval.
-  } else {cat("MGS is skipped")}
-  
-  #15. (reserved)
-  cat("15. Reserved\n")
+  #14. (reserved)
+  cat("14. Reserved\n")
   tmp <- data.frame(coef = NA, pval = NA)    #reserved for possible addition
   result[[1]][14,1] <- tmp[1,1]
   result[[2]][14,1] <- tmp[1,2]
@@ -526,48 +517,4 @@ WRS <- function (data) {
   out = matrix(c(out$statistic, out$p.value), nrow = 1)
   colnames(out) = c("Estimate", "pval")
   return(out)
-}
-
-### 14. metagenomeSeq
-mgs.base <- function (data) {
-  
-  require (metagenomeSeq)
-  
-  # whole-data-level test. not adequate for inidivdual-gene-level test.
-  #print(303)  
-  name = names(data)
-  #print(305)
-  gene = which(grepl("y\\.", name))
-  #print(307)
-  gene.name = gsub("y\\.", "", name[gene])
-  #print(309)  
-  
-  cData = data %>% transmute(samples = 1:n(), phenotype, batch)
-  data = t(as.matrix(data[,gene]))
-  dimnames(data) = list(gene.name, cData$samples)
-  
-  obj = newMRexperiment(counts = data, 
-                        phenoData = AnnotatedDataFrame(cData), 
-                        featureData = AnnotatedDataFrame(data.frame(primerid = gene.name)))
-  datp = cumNormStat(data, pFlag = TRUE, main = "Trimmed lung data")
-  obj = cumNorm(obj, p = datp)
-  normFactors(obj)
-  mod <- model.matrix(~ 1 + phenotype, data = cData)
-  # mod <- model.matrix(~ 1 + phenotype + batch, data = cData) # "Can't analyze currently."
-  mgsRes = fitFeatureModel(obj, mod)
-  mgsRes = cbind(mgsRes$fitZeroLogNormal$logFC, mgsRes$pvalues)
-  colnames(mgsRes) = c("Estimate", "pval")
-  
-  return(mgsRes)
-}
-mgs <- function(data) {
-  tmp <- try(mgs.base(data))
-  if (class(tmp)[1] == "try-error") {
-    name = names(data)
-    #print(305)
-    gene = which(grepl("y\\.", name))
-    gene.name = gsub("y\\.", "", name[gene])
-    return(matrix(NA, length(gene), 2, dimnames= list(gene.name, c("Estimate", "pval"))))
-  }
-  tmp
 }

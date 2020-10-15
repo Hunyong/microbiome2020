@@ -2,13 +2,13 @@
 for l in {1..3}; do # ZINB, ZIG, ZILN
   for j in {1..5}; do 
     for k in {1..54}; do 
-      sbatch --time=10:00:00 --mem 10000 2run-code.sh 0 $j $k $l 5 80;
-      sbatch --time=40:00:00 --mem 10000  2run-code.sh 0 $j $k $l 5 400; 
+      sbatch --time=5:00:00 2run-code.sh 0 $j $k $l 5 80;
+      sbatch --time=25:00:00 2run-code.sh 0 $j $k $l 5 400; 
       if [[ "$l" = 3 ]]; then
-        sbatch --time=10:00:00 --mem 10000  2run-code.sh 0 $j $k $l 2.5 80;
-        sbatch --time=40:00:00 --mem 10000  2run-code.sh 0 $j $k $l 2.5 400;
-        sbatch --time=10:00:00 --mem 10000  2run-code.sh 0 $j $k $l 0 80;
-        sbatch --time=40:00:00 --mem 10000  2run-code.sh 0 $j $k $l 0 400;
+        sbatch --time=5:00:00 2run-code.sh 0 $j $k $l 2.5 80;
+        sbatch --time=25:00:00 2run-code.sh 0 $j $k $l 2.5 400;
+        sbatch --time=5:00:00 2run-code.sh 0 $j $k $l 0 80;
+        sbatch --time=25:00:00 2run-code.sh 0 $j $k $l 0 400;
       fi;
     done; 
   done; 
