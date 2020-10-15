@@ -49,16 +49,16 @@ fullplot <- function(size,model)
                                         "Effect_mu(D>H).theta(D>H)", "Effect_mu(D>H).pi(D<H)", 
                                         "Effect_theta(D>H).pi(D<H)", "Effect_mu(D>H),pi(D>H)",
                                         "Effect_mu(D>H).theta(D<H)", "Effect_theta(D<H).pi(D<H)"), 
-                             labels = c(TeX("D1(null)"),
-                                        TeX("D2($\\mu_D$>$\\mu_{H}$)"), 
-                                        TeX("D3($\\theta_D$>$\\theta_{H}$)"),
-                                        TeX("D4($\\pi_D$<$\\pi_{H}$)"),
-                                        TeX("D5($\\mu_D$>$\\mu_H$, $\\theta_D$>$\\theta_{H}$)"),
-                                        TeX("D6($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
-                                        TeX("D7($\\theta_D$>$\\theta_H$, $\\pi_D$<$\\pi_{H}$)"),
-                                        TeX("D8($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)"),
-                                        TeX("D9($\\mu_D$>$\\mu_H$, $\\theta_D$<$\\theta_{H}$)"),
-                                        TeX("D10($\\theta_D$<$\\theta_H$, $\\pi_D$<$\\pi_{H}$)")))
+                             labels = c(TeX("D1 (null)"),
+                                        TeX("D2 ($\\mu_D$>$\\mu_{H}$)"), 
+                                        TeX("D3 ($\\theta_D$>$\\theta_{H}$)"),
+                                        TeX("D4 ($\\pi_D$<$\\pi_{H}$)"),
+                                        TeX("D5 ($\\mu_D$>$\\mu_H$, $\\theta_D$>$\\theta_{H}$)"),
+                                        TeX("D6 ($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
+                                        TeX("D7 ($\\theta_D$>$\\theta_H$, $\\pi_D$<$\\pi_{H}$)"),
+                                        TeX("D8 ($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)"),
+                                        TeX("D9 ($\\mu_D$>$\\mu_H$, $\\theta_D$<$\\theta_{H}$)"),
+                                        TeX("D10 ($\\theta_D$<$\\theta_H$, $\\pi_D$<$\\pi_{H}$)")))
   res$batch_f = factor(res$batch_f,
                             levels = c("no batch effect", 
                                        "small(+,+,-) batch effect",
@@ -167,11 +167,11 @@ powerplot <- function(model,size, width = 20, height=12,
   res3$effect_f = factor(res3$effect,
                          levels = c("Effect_mu(D>H)", "Effect_theta(D>H)", "Effect_pi(D<H)",
                                     "Effect_mu(D>H).pi(D<H)", "Effect_mu(D>H),pi(D>H)"), 
-                         labels = c(TeX("D2($\\mu_D$>$\\mu_{H}$)"), 
-                                    TeX("D3($\\theta_D$>$\\theta_{H}$)"),
-                                    TeX("D4($\\pi_D$<$\\pi_{H}$)"),
-                                    TeX("D6($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
-                                    TeX("D8($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)")))
+                         labels = c(TeX("D2 ($\\mu_D$>$\\mu_{H}$)"), 
+                                    TeX("D3 ($\\theta_D$>$\\theta_{H}$)"),
+                                    TeX("D4 ($\\pi_D$<$\\pi_{H}$)"),
+                                    TeX("D6 ($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
+                                    TeX("D8 ($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)")))
   res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
   
   res3 %>%
