@@ -159,39 +159,39 @@ nrm = "tpm5" #"rpk" "asin"
       cond.est.delta <- 
         cbind(h = cond.est.delta.healthy, 
               d = cond.est.delta.diseased) %>%
-        mutate(delta_pi = pmax(h.pi/d.pi, d.pi/h.pi), 
-               delta_mu = pmax(h.mu/d.mu, d.mu/h.mu), 
-               delta_theta = pmax(h.theta/d.theta, d.theta/h.theta),
+        mutate(delta_pi = abs(qlogis(h.pi)- qlogis(d.pi)), 
+               delta_mu = abs(log(h.mu) - log(d.mu)), 
+               delta_theta = abs(log(h.theta) - log(d.theta)),
                batch = h.batch) %>%
         dplyr::select("batch", "delta_pi", "delta_mu", "delta_theta")
       
-      cond.est.delta.pi12 <- cond.est.delta %>% dplyr::filter (delta_pi <= 1.2)
-      cond.est.delta.pi15 <- cond.est.delta %>% dplyr::filter (delta_pi > 1.2 & delta_pi <= 1.5)
-      cond.est.delta.pi20 <- cond.est.delta %>% dplyr::filter (delta_pi > 1.5 & delta_pi <= 2.0)
-      cond.est.delta.pi12$pi_id = 1.2
-      cond.est.delta.pi15$pi_id = 1.5
-      cond.est.delta.pi20$pi_id = 2.0
+      cond.est.delta.pi02 <- cond.est.delta %>% dplyr::filter (delta_pi <= 0.2)
+      cond.est.delta.pi05 <- cond.est.delta %>% dplyr::filter (delta_pi > 0.4 & delta_pi <= 0.6)
+      cond.est.delta.pi09 <- cond.est.delta %>% dplyr::filter (delta_pi > 0.8 & delta_pi <= 1.0)
+      cond.est.delta.pi02$pi_id = 0.2
+      cond.est.delta.pi05$pi_id = 0.5
+      cond.est.delta.pi09$pi_id = 0.9
     
-      cond.est.delta.all = rbind(cond.est.delta.pi12, 
-                                  cond.est.delta.pi15,
-                                  cond.est.delta.pi20)
-      rm(cond.est.delta.pi10, cond.est.delta.pi15, cond.est.delta.pi20)
+      cond.est.delta.all = rbind(cond.est.delta.pi02, 
+                                  cond.est.delta.pi05,
+                                  cond.est.delta.pi09)
+      rm(cond.est.delta.pi02, cond.est.delta.pi05, cond.est.delta.pi09)
     
       cond.est.delta.all$pi_id_f = factor(cond.est.delta.all$pi_id,
-                                           levels = c(1.2, 1.5, 2.0),
-                                           labels = c(TeX("$\\delta_{\\pi} \\in \\[1.0, 1.2\\]$"),
-                                                      TeX("$\\delta_{\\pi} \\in (1.2, 1.5\\]$"),
-                                                      TeX("$\\delta_{\\pi} \\in (1.5, 2.0\\]$")))
+                                           levels = c(0.2, 0.5, 0.9),
+                                           labels = c(TeX("$\\delta_{\\pi} \\in \\[0.0, 0.2\\]$"),
+                                                      TeX("$\\delta_{\\pi} \\in (0.4, 0.6\\]$"),
+                                                      TeX("$\\delta_{\\pi} \\in (0.8, 1.0\\]$")))
     
     
       cond.est.delta.all %>%
-        dplyr::filter(delta_theta < 50 & delta_mu < 5) %>%
+        # dplyr::filter(delta_theta < 50 & delta_mu < 5) %>%
         ggplot(aes(delta_mu, delta_theta, col = batch, shape = batch)) +
         geom_point() +
         scale_shape_manual(name = "batch",values=c(17, 15)) +
         xlab(TeX('$\\delta_\\mu$')) + 
         ylab(TeX('$\\delta_\\theta')) + 
-        ylim(if(model == "zinb") c(0, 50) else c(0, 30)) + xlim(c(1, 5)) +
+        ylim(if(model == "zinb") c(0, 5) else c(0, 5)) + xlim(c(0, 2)) +
         ggtitle(TeX("(|$\\delta_{\\mu}$|, |$\\delta_{\\theta}$|, |$\\delta_{\\pi}$|) estimates")) +
         theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
         facet_grid(rows = vars(pi_id_f), labeller = label_parsed) -> p2
@@ -207,36 +207,36 @@ nrm = "tpm5" #"rpk" "asin"
       cond.est.kappa <- 
         cbind(b1 = cond.est.kappa.batch1, 
               b2 = cond.est.kappa.batch2) %>%
-        mutate(kappa_pi = pmax(b1.pi/b2.pi, b2.pi/b1.pi), 
-               kappa_mu = pmax(b1.mu/b2.mu, b2.mu/b1.mu), 
-               kappa_theta = pmax(b1.theta/b2.theta, b2.theta/b1.theta),
+        mutate(kappa_pi = abs(qlogis(b1.pi) - qlogis(b2.pi)), 
+               kappa_mu = abs(log(b1.mu) - log(b2.mu)), 
+               kappa_theta = abs(log(b1.theta) - log(b2.theta)),
                disease = ifelse(b1.disease == "D", "dieased", "healthy")) %>% 
         dplyr::select("disease", "kappa_pi", "kappa_mu", "kappa_theta")
       
       
-      cond.est.kappa.pi12 <- cond.est.kappa %>% dplyr::filter (kappa_pi <= 1.2)
-      cond.est.kappa.pi15 <- cond.est.kappa %>% dplyr::filter (kappa_pi > 1.2 & kappa_pi <= 1.5)
-      cond.est.kappa.pi20 <- cond.est.kappa %>% dplyr::filter (kappa_pi > 1.5 & kappa_pi <= 2.0)
+      cond.est.kappa.pi03 <- cond.est.kappa %>% dplyr::filter (kappa_pi <= 0.4)
+      cond.est.kappa.pi07 <- cond.est.kappa %>% dplyr::filter (kappa_pi > 0.6 & kappa_pi <= 0.8)
+      cond.est.kappa.pi12 <- cond.est.kappa %>% dplyr::filter (kappa_pi > 1.1 & kappa_pi <= 1.3)
+      cond.est.kappa.pi03$pi_id = 0.3
+      cond.est.kappa.pi07$pi_id = 0.7
       cond.est.kappa.pi12$pi_id = 1.2
-      cond.est.kappa.pi15$pi_id = 1.5
-      cond.est.kappa.pi20$pi_id = 2.0
       
-      cond.est.kappa.all = rbind(cond.est.kappa.pi12, cond.est.kappa.pi15, cond.est.kappa.pi20)
+      cond.est.kappa.all = rbind(cond.est.kappa.pi03, cond.est.kappa.pi07, cond.est.kappa.pi12)
       
       cond.est.kappa.all$pi_id_f = factor(cond.est.kappa.all$pi_id,
-                                           levels = c(1.2, 1.5, 2.0),
-                                           labels = c(TeX("$\\kappa_{\\pi} \\in \\[1.0, 1.2\\]$"), 
-                                                      TeX("$\\kappa_{\\pi} \\in (1.2, 1.5\\]$"),
-                                                      TeX("$\\kappa_{\\pi} \\in (1.5, 2.0\\]$")))
+                                           levels = c(0.3, 0.7, 1.2),
+                                           labels = c(TeX("$\\kappa_{\\pi} \\in \\[0.0, 0.4\\]$"), 
+                                                      TeX("$\\kappa_{\\pi} \\in (0.6, 0.8\\]$"),
+                                                      TeX("$\\kappa_{\\pi} \\in (1.1, 1.3\\]$")))
       
       cond.est.kappa.all %>%
-        dplyr::filter(kappa_theta < 50 & kappa_mu < 5) %>%
+        # dplyr::filter(kappa_theta < 50 & kappa_mu < 5) %>%
         ggplot(aes(kappa_mu, kappa_theta, col = disease, shape = disease)) +
         geom_point() +
         scale_shape_manual(name = "disease",values=c(16,1)) +
         xlab(TeX('$\\kappa_\\mu$')) + 
         ylab(TeX('$\\kappa_\\theta')) + 
-        ylim(if(model == "zinb") c(0, 50) else c(0, 30)) + xlim(c(1, 5)) +
+        ylim(if(model == "zinb") c(0, 2) else c(0, 2)) + xlim(c(0, 2)) +
         ggtitle(TeX("(|$\\kappa_{\\mu}$|, |$\\kappa_{\\theta}$|, |$\\kappa_{\\pi}$|) estimates")) +
         theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
         facet_grid(rows = vars(pi_id_f), labeller = label_parsed) -> p3
