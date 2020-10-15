@@ -1,6 +1,6 @@
 library(tidyverse)
 library(latex2exp)
-load("micro.RData")
+source("C01.02.simulation.setup.R")
 
 LBplot <- function(model,size)
 {
@@ -41,11 +41,11 @@ LBplot <- function(model,size)
   res$effect_f = factor(res$effect,
                         levels = c("Effect_mu(D>H)", "Effect_theta(D>H)", "Effect_pi(D<H)",
                                    "Effect_mu(D>H).pi(D<H)", "Effect_mu(D>H),pi(D>H)"), 
-                        labels = c(TeX("D2($\\mu_D$>$\\mu_{H}$)"), 
-                                   TeX("D3($\\theta_D$>$\\theta_{H}$)"),
-                                   TeX("D4($\\pi_D$<$\\pi_{H}$)"),
-                                   TeX("D6($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
-                                   TeX("D8($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)")))
+                        labels = c(TeX("D2 ($\\mu_D$>$\\mu_{H}$)"), 
+                                   TeX("D3 ($\\theta_D$>$\\theta_{H}$)"),
+                                   TeX("D4 ($\\pi_D$<$\\pi_{H}$)"),
+                                   TeX("D6 ($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
+                                   TeX("D8 ($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)")))
   
   
   res %>%
