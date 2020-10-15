@@ -4,7 +4,7 @@ library(latex2exp)
 library(tidyverse)
 source("C01.02.simulation.setup.R")
 
-reducedplot <- function(model,size) {
+reducedplot <- function(model) {
   i = 1
   j.index <- c(1,5,3)
   k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
@@ -14,20 +14,23 @@ reducedplot <- function(model,size) {
                      ziln = parameterLN2)
   param.k = apply(parameter[k.index,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))
   res3 <- NULL
-  for(j in j.index)
+  for(size in c(80,400))
   {
-    for(k in k.index)
+    for(j in j.index)
     {
-      result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
-      result.stat <- data.frame(result$stat)
-      
-      tmp <- result.stat%>% mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
-                                    "i" = i,"j" = j,"k" = k,
-                                    "batch" = as.character(result$setting$kappa[4]),
-                                    "effect" = as.character(result$setting$delta[4])) %>%
-        dplyr::select("LB","LN","MAST","KW","KW-II","DESeq2", "MGS", "i","j","k","batch","effect")
-      
-      res3 <- rbind(res3,tmp[1,])
+      for(k in k.index)
+      {
+        result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
+        result.stat <- data.frame(result$stat)
+
+        tmp <- result.stat%>% mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
+                                      "i" = i,"j" = j,"k" = k,"size"=size,
+                                      "batch" = as.character(result$setting$kappa[4]),
+                                      "effect" = as.character(result$setting$delta[4])) %>%
+          dplyr::select("LB","LN","MAST","KW","KW-II","DESeq2", "MGS", "i","j","k","batch","effect","size")
+
+        res3 <- rbind(res3,tmp[1,])
+      }
     }
   }
   # 
@@ -44,7 +47,8 @@ res.tmp <<- res3
                         labels = c("K1 (0, 0, 0)",
                                    "K3 (1, 1, -1)",
                                    "K5 (1, -1, -1)"))
-  
+    res3$size = factor(res3$size,levels = c("80","400"),labels = c("n==80","n==400"))
+
   res3 %>%
     ggplot(aes(factor(k), p.value,fill = batch_f)) +
     #ggplot(aes(factor(k), p.value, col=batch, group=batch, fill = batch)) +
@@ -58,22 +62,18 @@ res.tmp <<- res3
                                "K5 (1, -1, -1)" = "tomato1")) +
     xlab(expression("baseline (" * mu ~ ", " * theta * ", " * pi * ")")) +
     ylab("rejection rate") +
-    facet_grid(rows = vars(method_f)) +
-    theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
-    ggtitle(ifelse(size == 80, "A. type-I error (n = 80)", "B. type-I error (n = 400)")) -> p
+    ggtitle(paste0("type-I error"))+
+    facet_grid(rows = vars(method_f),cols = vars(size),labeller = label_parsed)+
+    theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> p
   
-  ggsave(file = paste0("figure/", model,"_null_size",size,".png"), p, width = 5, height=6)
+  ggsave(file = paste0("figure/", model,"_null_size.png"), p, width = 5, height=6)
   p
 }
 
 
-reducedplot(model = "ziln",size =400)
-reducedplot(model = "ziln",size =80)
+reducedplot(model = "ziln")
 
-reducedplot(model = "zig",size =400)
-reducedplot(model = "zig",size =80)
-reducedplot(model = "zinb",size =400)
-reducedplot(model = "zinb",size =80)
-
+reducedplot(model = "zig")
+reducedplot(model = "zinb")
 
 
