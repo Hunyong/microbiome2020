@@ -42,12 +42,12 @@ pertplot <- function(model= "ZILN", size)
                         levels = c("Effect_null", "Effect_mu(D>H)", 
                                    "Effect_theta(D>H)", "Effect_pi(D<H)",
                                    "Effect_mu(D>H).pi(D<H)", "Effect_mu(D>H),pi(D>H)"), 
-                        labels = c(TeX("D1(null)"),
-                                   TeX("D2($\\mu_D$>$\\mu_{H}$)"), 
-                                   TeX("D3($\\theta_D$>$\\theta_{H}$)"),
-                                   TeX("D4($\\pi_D$<$\\pi_{H}$)"),
-                                   TeX("D6($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
-                                   TeX("D8($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)")))
+                        labels = c(TeX("D1 (null)"),
+                                   TeX("D2 ($\\mu_D$>$\\mu_{H}$)"), 
+                                   TeX("D3 ($\\theta_D$>$\\theta_{H}$)"),
+                                   TeX("D4 ($\\pi_D$<$\\pi_{H}$)"),
+                                   TeX("D6 ($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
+                                   TeX("D8 ($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)")))
   res$batch_f = factor(res$batch_f,
                        levels = c("no batch effect", 
                                   "large(+,+,-) batch effect",
