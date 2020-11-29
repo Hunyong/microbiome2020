@@ -78,7 +78,7 @@ fullplot <- function(size,model)
     geom_bar(stat="identity", position=position_dodge()) +
     geom_hline(yintercept=0.05, col="black", linetype = 2) + ylim(ylim) + 
     theme(legend.position = "none", axis.text.x = element_text(angle=90)) +
-    scale_x_discrete(labels=param.k) +
+    scale_x_discrete(labels=param.k,guide =guide_axis(n.dodge = 2)) +
     scale_fill_manual(name = TeX("Batch effects ($\\kappa_\\mu, \\kappa_\\theta, \\kappa_{\\pi}$)"),
                       values=c("K1 (0, 0, 0)"  = "dodgerblue",
                                "K2 (0.5, 0.5, -0.5)"  = "darkgreen",
@@ -95,20 +95,20 @@ fullplot <- function(size,model)
 
 #width = 32, height = 16
 pn1 <- fullplot(80,model="ziln")
-ggsave(file="figure/ziln_full_80.png",pn1,width = 10,height = 7)
+ggsave(file="figure/ziln_full_80.png",pn1,width = 20,height = 16)
 pn2 <- fullplot(400,model="ziln")
-ggsave(file="figure/ziln_full_400.png",pn2,width = 10,height = 7)
+ggsave(file="figure/ziln_full_400.png",pn2,width = 20,height = 16)
 
 
 p1 <- fullplot(80,model="zinb")
-ggsave(file="figure/zinb_full_80.png",p1,width = 10,height = 7)
+ggsave(file="figure/zinb_full_80.png",p1,width = 20,height = 16)
 p2 <- fullplot(400,model="zinb")
-ggsave(file="figure/zinb_full_400.png",p2,width = 10,height = 7)
+ggsave(file="figure/zinb_full_400.png",p2,width = 20,height = 16)
 
 pp1 <- fullplot(80,model="zig")
-ggsave(file="figure/zig_full_80.png",pp1,width = 10,height = 7)
+ggsave(file="figure/zig_full_80.png",pp1,width = 20,height = 16)
 pp2 <- fullplot(400,model="zig")
-ggsave(file="figure/zig_full_400.png",pp2,width = 10,height = 7)
+ggsave(file="figure/zig_full_400.png",pp2,width = 20,height = 16)
 
 
 ####power plot####
