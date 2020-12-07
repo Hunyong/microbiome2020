@@ -14,7 +14,7 @@
     #   d = 2
     # }
     data = data.frame(y=as.numeric(yvec) %>% round)
-    a <- pscl::zeroinfl(formula = y ~ 1, data = data, dist = "negbin", EM = TRUE)
+    a <- pscl::zeroinfl(formula = y ~ 1, data = data, dist = "negbin", EM = FALSE)
     theta <- a$theta # theta (overdispersion phi. var = mu + mu^2 * phi)
     # for theta parameter, see http://www.jstatsoft.org/v27/i08/.
     bg <- a$coef # regression (beta, gamma)

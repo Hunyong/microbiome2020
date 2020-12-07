@@ -4,35 +4,44 @@ source("F00.00.generic.R")
 source("F01.01.base.R")
 zero.prob <- function (vec) {mean(vec == 0)}
 
-
-model = "ziln" #"zinb"
+type = "gene"
+# type = "genebact"
+# type = "bact"
+for (type in c("genebact", "bact", "gene")) {
+  print(type)
+type.full = switch(type, gene = "geneRPK.marginal", 
+                   genebact = "geneRPK.joint", bact = "bactRPK.marginal")
+# model = "ziln" #"zinb"
 nrm = "tpm5" #"rpk" "asin"
 
 ### 0.2 Data
   # Raw data of 118 subjects
-  gene.marginal.RPK.DRNA <- readRDS("../Data-processed/data.geneRPK.marginal.DRNA.ZOE1.rds")
-  excluded.subject <- gene.marginal.RPK.DRNA$meta$id %in% c(352, 420)
-  DataMeta116 = gene.marginal.RPK.DRNA$meta[!excluded.subject,]
+  fn <- sprintf("../Data-processed/data.%s.DRNA.ZOE1.rds", type.full)
+  data <- readRDS(fn)
+  excluded.subject <- data$meta$id %in% c(352, 420)
+  DataMeta116 = data$meta[!excluded.subject,]
   DataMeta116 <-
     DataMeta116 %>% 
     mutate(group = paste0(ifelse(cariesfree == 1, "H", "D"), ifelse(batch.RNA == "170628", 1, 2)),
            group_batch =  ifelse(batch.RNA == "170628", 1, 2),
            group_disease = ifelse(cariesfree == 1, "H", "D"))
-  
-  RNA         = gene.marginal.RPK.DRNA$otu[,, 2]
+ DRNA = "RNA"; DR.no = 2
+  RNA         = data$otu[,, DR.no]
   DataRPK116  = RNA[,colnames(RNA) %in% DataMeta116$id]
-  ST          = apply(DataRPK116, 2, sum)
+  ST          = apply(DataRPK116, 2, mean)
   mean(ST) # 5,551,718
-  DataTPM116  = t(t(DataRPK116)/ST) * 5E+6
+  scale1 <- signif(mean(ST), 1) * if (type == "bact") {1/2500} else 1
+  
+  DataTPM116  = t(t(DataRPK116)/ST) * scale1
   DataComp    = t(t(DataRPK116)/ST)  # for LB tests
   if (nrm == "asin") {
-    DataTPM116 = asn(DataTPM116/5E+6) * 5E+6
+    DataTPM116 = asn(DataTPM116/scale1) * scale1
     DataComp = asn(DataComp)
   }
   
   # Choose dataset and estimators according to the nrm!
   Data = if (nrm == "rpk") DataRPK116 else DataTPM116
-  rm(gene.marginal.RPK.DRNA, excluded.subject, RNA, DataRPK116, DataTPM116); gc()
+  rm(data, excluded.subject, RNA, DataRPK116, DataTPM116); gc()
   
   estr.ziln = function(yvec) {
     pp <- mean(yvec == 0)
@@ -43,7 +52,7 @@ nrm = "tpm5" #"rpk" "asin"
       pi = pp)
   }
   estr.zinb = function(yvec) {
-    ZINB.ML.time(yvec %>% round, notation="mtp")
+    ZINB.ML.time(yvec %>% round, notation="mtp", )
   }
   
   for (model in c("ziln", "zinb")) {
@@ -61,7 +70,8 @@ nrm = "tpm5" #"rpk" "asin"
     ### Estimation 
     if(T){
       set.seed(1)
-      samp <- sample(genes.regular.index, 300)
+      samp <- sample(genes.regular.index, 
+                     ifelse(type == "bact", length(genes.regular.index), 300))
       
       ### 1. marginal estimates
       # stat.ziln <- 
@@ -100,7 +110,8 @@ nrm = "tpm5" #"rpk" "asin"
         }) 
       cond.est <- do.call(rbind, cond.est)
       names(cond.est) <- gsub("\\.\\(Intercept\\)", "", names(cond.est))
-      saveRDS(cond.est, paste0("output/para_selection_est_", model, "_", nrm,".rds"))
+      if (grepl("V", names(cond.est)[1])) names(cond.est)[1:3] = c("mu", "theta", "pi")
+      saveRDS(cond.est, paste0("output/para_selection_est_", type, "_", model, "_", nrm,".rds"))
       
       cond.est %>% 
         dplyr::filter(theta < 150) %>% 
@@ -136,7 +147,7 @@ nrm = "tpm5" #"rpk" "asin"
                                                 TeX("$\\pi \\approx 0.9$")))
       # 1st col of parameter selection
       cond.est.all %>%
-        dplyr::filter(mu < 50, theta < 50) %>%
+        {if (type != "bact") {dplyr::filter(., mu < 50, theta < 50)} else {.}} %>%
         ggplot(aes(mu, theta, shape = group, col = group)) +
         geom_point() +
         scale_color_manual(name = "group",
@@ -145,7 +156,7 @@ nrm = "tpm5" #"rpk" "asin"
                                     H1 = "tomato3", 
                                     H2 = "tomato3")) +
         scale_shape_manual(name = "group",values=c(17, 15, 2, 0)) +
-        xlab(TeX('$\\mu$')) + ylab(TeX('$\\theta')) + 
+        xlab(TeX('$\\mu$')) + ylab(TeX('$\\theta')) + xlim(c(0, 50)) +
         ggtitle("baseline parameter estimates") +
         theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
         facet_grid(rows = vars(pi_id_f), labeller = label_parsed) -> p1
@@ -242,12 +253,16 @@ nrm = "tpm5" #"rpk" "asin"
         facet_grid(rows = vars(pi_id_f), labeller = label_parsed) -> p3
     
     ## combining altogether
-      grid.arrange(
-        grobs = list(p1, p2, p3),
-        ncol = 3, nrow = 1
+      plot_grid(
+        plotlist = list(p1, p2, p3),
+        ncol = 3, nrow = 1, labels = list("A", "B", "C")
       ) -> p
     
-    ggsave(paste0("figure/para_selection_", model, "_", nrm,".png"),  p,  width = 10, height = 10)#, dpi = 200)
+    ggsave(paste0("figure/para_selection_", type, "_", model, "_", nrm,".png"),  p,  width = 10, height = 10)#, dpi = 200)
     #dev.off()
+    
+    save(cond.est, cond.est.delta, cond.est.kappa, p, p1, p2, p3, file = sprintf("output/parameter_distn_%s_%s_%s_%s.rda", model, type, DRNA, nrm))
   }
+}
+  
   

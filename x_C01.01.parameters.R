@@ -45,16 +45,80 @@ mean(zero.proportion.DNA <= 0.2) # 16%
 mean(zero.proportion <= 0.2) # 3%
 
 mean.var = 
-  tibble(nz.mean = DataRPKRNA %>% apply(1, function(x) mean(x[x>0])),
-         nz.var =  DataRPKRNA %>% apply(1, function(x)  var(x[x>0])),
-         overdispersion = nz.var/nz.mean^2)
+  tibble(nz.mean.DNA = DataRPKDNA %>% apply(1, function(x) mean(x[x>0])),
+         nz.var.DNA =  DataRPKDNA %>% apply(1, function(x)  var(x[x>0])),
+         overdispersion.DNA = nz.var.DNA/nz.mean.DNA^2,
+         nz.mean.RNA = DataRPKRNA %>% apply(1, function(x) mean(x[x>0])),
+         nz.var.RNA =  DataRPKRNA %>% apply(1, function(x)  var(x[x>0])),
+         overdispersion.RNA = nz.var.RNA/nz.mean.RNA^2)
 
 mean.var %>% 
   sample_frac(0.01) %>% 
-  ggplot(aes(nz.mean, nz.var, col = overdispersion)) + geom_point() + theme_classic() + 
-  xlab("mean") + ylab("variance") +
+  ggplot(aes(nz.mean.DNA, nz.var.DNA, col = overdispersion.DNA)) + geom_point() + theme_classic() + 
+  xlab("nonzero mean (DNA)") + ylab("nonzero variance (DNA)") +
   xlim(c(0, 100)) + ylim(c(0, 100))
 # ggsave("figure/C0101overdispersion.png")
+
+mean.var %>% 
+  sample_frac(0.01) %>% 
+  ggplot(aes(nz.mean.RNA, nz.var.RNA, col = overdispersion.RNA)) + geom_point() + theme_classic() + 
+  xlab("nonzero mean (RNA)") + ylab("nonzero variance (RNA)") +
+  xlim(c(0, 100)) + ylim(c(0, 100))
+
+mean.var %>% 
+  sample_frac(0.01) %>% 
+  ggplot(aes(overdispersion.DNA, overdispersion.RNA)) + geom_point() + theme_classic()
+  # xlab("nonzero mean (RNA)") + ylab("nonzero variance (RNA)") +
+
+mean.var %>% 
+  sample_frac(0.01) %>% 
+  ggplot(aes(nz.mean.DNA, nz.mean.RNA, col = overdispersion.RNA)) + geom_point() + theme_classic() + 
+  # xlab("nonzero mean (RNA)") + ylab("nonzero variance (RNA)") +
+  xlim(c(0, 100)) + ylim(c(0, 100))
+
+mean.var %>% 
+  sample_frac(0.01) %>% 
+  ggplot(aes(nz.var.RNA/nz.mean.RNA, nz.var.DNA/nz.mean.DNA)) + geom_point() + theme_classic() + 
+  xlim(c(0, 100)) + ylim(c(0, 100))
+
+tmp.prop = with(mean.var, mean(nz.var.RNA/nz.mean.RNA^2 > nz.var.DNA/nz.mean.DNA^2, na.rm = TRUE))
+set.seed(1)
+mean.var %>% 
+  sample_frac(0.01) %>% 
+  ggplot(aes(nz.var.RNA/nz.mean.RNA^2, nz.var.DNA/nz.mean.DNA^2)) + geom_point() + theme_classic() +
+  geom_abline(slope = 1, intercept = 0, col = "red") +
+  xlab(TeX("$var (RNA| +) / \\mu (RNA| +)^2$")) +
+  ylab(TeX("$var (DNA| +) / \\mu (DNA| +)^2$")) +
+  annotate("text", x = 10, y = 5, label = paste0(round(tmp.prop*100, 1), "%"), col = "#F8766D") +
+  annotate("text", y = 10, x = 5, label = paste0(round(100 - tmp.prop*100, 1), "%"), col = "#619CFF")
+ggsave("figure/C0101overdispersion1.png")
+
+tmp.prop = with(mean.var, mean(nz.var.RNA/nz.mean.RNA > nz.var.DNA/nz.mean.DNA, na.rm = TRUE))
+set.seed(1)
+mean.var %>% 
+  sample_frac(0.01) %>% 
+  ggplot(aes(nz.var.RNA/nz.mean.RNA, nz.var.DNA/nz.mean.DNA)) + geom_point() + theme_classic() +
+  geom_abline(slope = 1, intercept = 0, col = "red") +
+  xlim(c(0, 1000)) + ylim(c(0,1000)) +
+  xlab(TeX("$var (RNA| +) / \\mu (RNA| +)$")) +
+  ylab(TeX("$var (DNA| +) / \\mu (DNA| +)$")) +
+  annotate("text", x = 900, y = 500, label = paste0(round(tmp.prop*100, 1), "%"), col = "#F8766D") +
+  annotate("text", y = 900, x = 500, label = paste0(round(100 - tmp.prop*100, 1), "%"), col = "#619CFF")
+ggsave("figure/C0101overdispersion2.png")
+
+mean.var %>% 
+  sample_frac(0.01) %>% 
+  ggplot(aes(nz.var.RNA/nz.mean.RNA, nz.var.DNA/nz.mean.DNA)) + geom_point() + theme_classic() +
+  geom_abline(slope = 1, intercept = 0, col = "red")
+mean(mean.var$nz.var.RNA/mean.var$nz.mean.RNA > mean.var$nz.var.DNA/mean.var$nz.mean.DNA * 0.867 , na.rm = TRUE) # only 25% var(RNA) > var(DNA)
+# 0.867 is the scale adjustment (the ratio below) for fair comparison btw DNA and RNA.
+
+mean.var$nz.mean.RNA %>% mean(na.rm = T) # 47.17
+mean.var$nz.mean.DNA %>% mean(na.rm = T) # 54.38
+mean(mean.var$nz.mean.RNA, na.rm = T)/mean(mean.var$nz.mean.DNA, na.rm = T) # 0.867
+
+mean.var$nz.mean.DNA %>% mean(na.rm=T)
+mean.var$nz.mean.RNA %>% mean(na.rm=T)
 
 zp.DNA <-
   zero.proportion.DNA %>% 
