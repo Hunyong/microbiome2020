@@ -69,7 +69,8 @@ ks.empirical <- function(data, model = "beta", return.est = FALSE,
       sapply(1:n.lilliefors, function(s) {
         if (s %% 10 == 0) cat(s, " ")
         x.sim = do.call(rFUN, c(list(n = n), args))
-        ks.empirical(x.sim, model = model, lilliefors = FALSE, return.est = FALSE, ks.pval = FALSE)["ks.coef"]
+        res = try(ks.empirical(x.sim, model = model, lilliefors = FALSE, return.est = FALSE, ks.pval = FALSE)["ks.coef"])
+        ifelse(class(res) == "try-error", NA, res)
       })
     cat("\n")
     # print(sort(null.set))
