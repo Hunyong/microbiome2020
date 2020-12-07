@@ -99,7 +99,7 @@ for (type in c("genebact", "bact", "gene")) {
       
       pp <- gridExtra::grid.arrange(p1, p2, p3, p4, 
                                     top = grid::textGrob(paste0("Fitted models for ", taxa.i)))
-      ggsave(paste0("figure/C0102QQplot_newdata_", nrm, "_",i, ".png"), plot = pp,
+      ggsave(paste0("figure/C0102QQplot_newdata_", type, "_", nrm, "_",i, ".png"), plot = pp,
              width = 12, height = 9)
     }
     if (! i %% 10) {cat("i = ", i, 
@@ -107,11 +107,11 @@ for (type in c("genebact", "bact", "gene")) {
                         " mean.gamma.ks.p = ", sprintf("%.5f", mean(gof.gamma[, "ks.pval"], na.rm = T)), 
                         " mean.ln.ks.p = ", sprintf("%.5f", mean(gof.ln[, "ks.pval"], na.rm = T)), "\n")}
     saveRDS(list(beta = gof.beta, gamma = gof.gamma, ln = gof.ln),
-            paste0("output/gof_newdata_", nrm, ".tmp.rds"))
+            paste0("output/gof_newdata_", type, "_", nrm, ".tmp.rds"))
   }
   
   saveRDS(list(beta = gof.beta, gamma = gof.gamma, ln = gof.ln),
-          paste0("output/gof_newdata_", nrm, ".rds"))
+          paste0("output/gof_newdata_", type, "_", nrm, ".rds"))
 
 }
 
