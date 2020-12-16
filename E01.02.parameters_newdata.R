@@ -82,7 +82,12 @@ for (type in c("genebact", "bact", "gene")) {
           }) %>% t %>% 
             as.data.frame %>% 
             mutate(group = g, disease = substr(group, 1, 1), batch = substr(group, 2, 2))
-        }) 
+        })
+      if (any(sapply(cond.est, names)[1, ] == "V1")) {
+        for (g in 1:length(cond.est)) {
+          names(cond.est[[g]])[1:3] = c("mu", "theta", "pi")
+        }
+      }
       cond.est <- do.call(rbind, cond.est)
       names(cond.est) <- gsub("\\.\\(Intercept\\)", "", names(cond.est))
       if (grepl("V", names(cond.est)[1])) names(cond.est)[1:3] = c("mu", "theta", "pi")
