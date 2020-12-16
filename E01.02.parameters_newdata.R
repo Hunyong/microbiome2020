@@ -9,14 +9,14 @@ type = "gene"
 # type = "bact"
 for (type in c("genebact", "bact", "gene")) {
   print(type)
-  type.full = switch(type, gene = "geneProp.marginal", 
-                     genebact = "geneProp.joint", bact = "bactProp.marginal")
+  type.full = switch(type, gene = "geneRPK.marginal", 
+                     genebact = "geneRPK.joint", bact = "bactRPK.marginal")
   nrm = "tpm5" #"rpk" "asin"
   if (nrm == "rpk") stop("RPK is not considered for this data.")
   
   ### 0.2 Data
   # Raw data of 118 subjects
-  fn <- sprintf("Nature2019data/data.ecs_relab.%s.RNA.rds", type.full)
+  fn <- sprintf("Nature2019data/data.%s.RNA.rds", type.full)
   data <- readRDS(fn)
   DataMeta = data$meta
   DataMeta <-
