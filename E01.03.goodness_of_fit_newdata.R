@@ -117,34 +117,41 @@ for (type in c("genebact", "bact", "gene")) {
 
 if (0) {
   gof.total <- NULL
-  for (nrm in c("tpm", "asin")) {
-    nrm2 = switch(nrm, "tpm" = "TPM", "asin" = "arcsin")
-    gof <- readRDS(paste0("output/gof_newdata_", nrm, ".rds"))
-    gof.total <- 
-      rbind(gof.total,
-            gof$beta[, "lil.pval"] %>% data.frame(pval = ., distribution = "Beta", nrm = nrm2),
-            gof$ln[, "lil.pval"] %>% data.frame(pval = ., distribution = "Log-normal", nrm = nrm2),
-            gof$gamma[, "lil.pval"] %>% data.frame(pval = ., distribution = "Gamma", nrm = nrm2))
+  for (type in c("gene", "genebact", "bact")) {
+    for (nrm in c("tpm", "asin")) {
+      nrm2 = switch(nrm, "tpm" = "TPM", "asin" = "arcsin")
+      gof <- readRDS(paste0("output/gof_newdata_", type, "_", nrm, ".rds"))
+      gof.total <- 
+        rbind(gof.total,
+              gof$beta[, "lil.pval"] %>% data.frame(pval = ., distribution = "Beta", nrm = nrm2),
+              gof$ln[, "lil.pval"] %>% data.frame(pval = ., distribution = "Log-normal", nrm = nrm2),
+              gof$gamma[, "lil.pval"] %>% data.frame(pval = ., distribution = "Gamma", nrm = nrm2))
+      
+    }
+    gof.total <-
+      gof.total %>% 
+      mutate(nrm = factor(nrm, levels = c("TPM", "arcsin")),
+             distribution = factor(distribution, levels = c("Beta", "Log-normal", "Gamma")))
     
+    gof.stat <- 
+      aggregate(pval ~ distribution + nrm, data = gof.total, 
+                FUN = function(s) mean(s < 0.05, na.rm = TRUE)) %>% 
+      mutate(reject = paste0("%(p < 0.05) = ", signif(pval, 2)), 
+             pval = 0.5, count = 70,
+             reject = ifelse(reject == "%(p < 0.05) = 0", "%(p < 0.05) < 0.001", reject))
+    
+    gof.total %>% 
+      ggplot(aes(pval)) + 
+      facet_grid(distribution ~ nrm) + 
+      geom_histogram(binwidth = 0.01) + 
+      # ggtitle("Kolmogorov-Smirnov test p-value histogram for Beta, Log-normal and Gamma distribution") +
+      xlab("KS (Lilliefors) test p-values") + ggtitle("Lloyd-Price et al. 2019 data (n = 104)") + 
+      geom_vline(xintercept = 0.05, col = "red") + 
+      geom_text(data = gof.stat, aes(pval, count, label = reject)) +
+      ggtitle("(C) IBD (n = 104)") + 
+      theme_bw()
+    # annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
+    ggsave(paste0("figure/C0102KS_newdata-p-Histogram_", type, ".png"), width = 9, height = 6)
   }
-  gof.stat <- 
-    aggregate(pval ~ distribution + nrm, data = gof.total, 
-              FUN = function(s) mean(s < 0.05, na.rm = TRUE)) %>% 
-    mutate(reject = paste0("%(p < 0.05) = ", signif(pval, 2)), 
-           pval = 0.5, count = 100,
-           reject = ifelse(reject == "%(p < 0.05) = 0", "%(p < 0.05) < 0.001", reject))
-  gof.total %>% 
-    mutate(nrm = factor(nrm, levels = c("TPM", "arcsin"))) %>% 
-    ggplot(aes(pval)) + 
-    facet_grid(distribution ~ nrm) + 
-    geom_histogram(binwidth = 0.01) + 
-    # ggtitle("Kolmogorov-Smirnov test p-value histogram for Beta, Log-normal and Gamma distribution") +
-    xlab("KS (Lilliefors) test p-values") + ggtitle("new data (n = 104)") + 
-    geom_vline(xintercept = 0.05, col = "red") + 
-    geom_text(data = gof.stat, aes(pval, count, label = reject)) +
-    theme_bw()
-  # annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
-  ggsave(paste0("figure/C0102KS_newdata-p-Histogram_.png"))
-
 }
 

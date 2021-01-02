@@ -9,6 +9,9 @@ if (zoe == 1) {
   gene.marginal.RPK.DRNA <- readRDS("../Data-Processed/data.geneRPK.marginal.DRNA.ZOE1.rds")
 } else if (zoe == 2) {
   gene.marginal.RPK.DRNA <- readRDS("../Data-Processed/data.geneRPK.marginal.DRNA.ZOE2.rds")
+} else if (zoe == 0) {
+  gene.marginal.RPK.DRNA <- readRDS("../MicrobiomePaper2020/Nature2019data/data.ecs_relab.geneProp.joint.RNA.rds")
+  gene.marginal.RPK.DRNA$meta$id <- gene.marginal.RPK.DRNA$meta$Participant.ID
 }
 excluded.subject <- gene.marginal.RPK.DRNA$meta$id %in% c(352, 420, 10083, 11210, 11259, 11790, 12623)
 DataMeta = gene.marginal.RPK.DRNA$meta[!excluded.subject,]
