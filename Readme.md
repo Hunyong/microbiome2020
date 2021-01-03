@@ -1,30 +1,24 @@
+### Read me
+
+## Instruction for the simulations  
+Make sure the packages are installed on the machine using `C00.00.install.R`.  
+Then run `C02.01.simulation-Basic-ijk-batch.R` with the vector `args` properly defined.  
+For example, this specification is done in the SLURM job submission code, `simrun.sh`.   
 
 
-# the Kruskal-Wallis test (or the Lilliefors procedure)  
-This can be implemented by the following example code.  
-The code includes testing the Beta, log-normal, and gamma distributions. 
-However, other distributions can be included by tailoring the code.  
-The Kruskal-Wallis test works for continuous distributions.  
-The distinction between the Kruskall-Wallis test and the Lilliefors procedure is that
-the former tests the goodness of fit of data to a distribution with a fixed set of parameters,
-while the latter tests that with an estimated distribution which is often the case in practice.  
+# C00 and C01 - preliminaries
+C00.00.install.R - The R packages needed to be installed for these simulations.  
+C01.01.*.R  - These are preliminary code for parameter selection based on the ZOE and the IBD data, and thus cannot be implemented without the data.  
+C01.02.simulation.setup.R  -  Setting up the basic parameters for the simulations.  
 
-'@ data A vector of the random variable.
-'@ model The model against which the goodness of fit is measured. Either "beta", "gamma", or "ln" for Beta, Gamma, or log-normal, respectively.
-'@ ks.pval p-value of the Kruskal-Wallis test. This is lower than the p-value of the Lilliefors procedure and should not be used when the model parameters are estimated.
-'@ lilliefors Whether the Lilliefors procedure is used.
-'@ n.lilliefors The number of replicates used to calculate the p-value of the Lilliefors procedure.
+# C02 - simulation implementation  
+C02.01.simulation-Basic-ijk-batch.R - a modular code for simulations. This runs a specific setting (the baseline distribution, the disease effects, and the batch effects.)  
+C02.02.*.R - Once all the simulations for each setting is completed, the outputs are summarized as a figure.
 
-# example - Beta distribution
+# C03 - Application  
+C03.01.*.R - The tests based on the ZOE data. This code cannot be implemented without the data.  
 
-library(gamlss) # for beta distribution
-source("F01.01.goodness_of_fit.R") # ks.empirical() function
-set.seed(1)
-dat = rbeta(100, shape1 = 1, shape2 = 1)
-ks.empirical(dat, model = "beta", return.est = FALSE, ks.pval = FALSE, lilliefors = TRUE, n.lilliefors = 300)
-# p-val = 0.787 # Failed to reject the null (null = lack of fit)
-ks.empirical(dat, model = "gamma", return.est = FALSE, ks.pval = FALSE, lilliefors = TRUE, n.lilliefors = 300)
-# p-val = 0.013 # The null is rejected at 5% significance level.
-ks.empirical(dat, model = "ln", return.est = FALSE, ks.pval = FALSE, lilliefors = TRUE, n.lilliefors = 300)
-# p-val = 0.000 # The null is rejected at 5% significance level.
+# D0* and E0* - Not relevant.
 
+# F0* - Functions 
+These are needed to run the above code. They are sourced and called within each of the above code.   
