@@ -1,7 +1,11 @@
 cat("Microbiome - C02.01.simulation-Basic-ijk-batch.R\n")
 
 args = commandArgs(trailingOnly=TRUE)  # passed from script
-cat("The Command Arg is: ", str(args))
+if (length(args) == 0) {
+  warning("commandArgs() was not provided. Set as the default value.")
+  args = c(i = 1, j = 1, k = 1, model = 1, perturb = 5, n = 80, save.stat.only = 1, n.gene = 10000)
+}
+cat("The Command Arg is: \n"); print(args)
 # i = as.numeric(args[1])  # 1..10    delta effect
 j = as.numeric(args[2])  # 1..5     kappa effect
 k = as.numeric(args[3])  # 1..34    baseline scenario
@@ -15,9 +19,9 @@ if (is.na(save.stat.only)) save.stat.only = TRUE
 if (is.na(n.gene)) n.gene = 1000
 
 if (n == 80) {
-  regular = 0.1 
+  prev.filter = 0.1 
 } else if (n == 400) {
-  regular = 0.02
+  prev.filter = 0.02
 }
 
 if (is.null(model) | model == 1) {
@@ -63,7 +67,7 @@ for (i in 1:10) {
     source("F01.02.models-base.R")
     source("F01.02.models.R")
     source("F01.02.summary.gamlss2.R")
-     #devtools::install_github("RGLab/MAST");
+     #BiocManager::install("MAST")
     library(MAST)
     library(coin)
     library(metagenomeSeq)
@@ -113,43 +117,95 @@ for (i in 1:10) {
            param.set = param.set,
            n.sample = n.sample, n.gene=n.gene,
            perturb = perturb,
-           threshold = c(regular = cutoff, sig = sig))
+           threshold = c(regular = cutoff, sig = sig, prev.filter = prev.filter))
     
     # 2. data
     data = do.call(r.sim, dat.args)
     data %<>% dplyr::filter(sampleSum > 0)
-    cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
     
+    # filtering
+    nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
+    filtr = nonzero.prop >= prev.filter
+    data[, which(!filtr)] = NA
+    
+    cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
+    cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), ".\n")
     #if (any(class(try(readRDS(paste0("output/R0201sim181201/result.", i, ".", j, ".", k,".rds")))) %in% "try-error")) {
     
     # do the tests on the ramdon ZINB distribution we created
-    result <- tester.set.HD.batch(data, n.gene=n.gene, suppressWarnWagner = TRUE, # if not suppressed, slurm-out file size explodes.
+    result <- tester.set.HD.batch(data, n.gene=n.gene, suppressWarnWagner = TRUE, # if not suppressed, the slurm-out file size explodes.
                                   LB.skip = F,LN.skip = F, MAST.skip = F,
                                   KW.skip = F, Wg.skip = F, De2.skip = F, WRS.skip = (j != 1),
                                   MGS.skip = (j != 1)) # if there are batch effects skip WRS and MGS.
     result$nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
     
-    ### More MAST replicates (M = 10 in total)
+    ### More MAST, DESeq2, MGS replicates (M = 10 in total)
         result.MAST <- list(coef = list(), pval = list())
         result.MAST$coef[[1]] <- result$coef[c("MAST.nonz", "MAST.zero", "MAST.glob"), ]
         result.MAST$pval[[1]] <- result$pval[c("MAST.nonz", "MAST.zero", "MAST.glob"), ]
         result.MAST$nonzero.prop[[1]] <- result$nonzero.prop
+        result.DS2 <- list(coef = list(), pval = list())
+        result.DS2$coef[[1]] <- result$coef["DESeq2", ]
+        result.DS2$pval[[1]] <- result$pval["DESeq2", ]
+        result.DS2$nonzero.prop[[1]] <- result$nonzero.prop
         
-        message("More MAST replicates (s):\n")
+        result.MGS <- list(coef = list(), pval = list())
+        result.MGS$coef[[1]] <- result$coef["MGS", ]
+        result.MGS$pval[[1]] <- result$pval["MGS", ]
+        result.MGS$nonzero.prop[[1]] <- result$nonzero.prop
+        
+        # empty shells for the rest of the replicates
+        for (s in 2:M) {
+          result.MAST$coef[[s]] <- 
+            result.MAST$pval[[s]] <- 
+            matrix(NA, 3, n.gene, dimnames = list(c("MAST.nonz", "MAST.zero", "MAST.glob"), NULL))
+          result.DS2$coef[[s]] <- result.DS2$pval[[s]] <- result.MGS$coef[[s]] <- result.MGS$pval[[s]] <- rep(NA, n.gene)
+        }
+        message("More MAST, MGS, DESeq2 replicates (s):\n")
         for (s in 2:M) {
           cat("MAST replicate s = ", s, "\n")
           set.seed(s*10^5 + i*10^3 + j*10^2 + k)
           data = do.call(r.sim, dat.args)
           data %<>% dplyr::filter(sampleSum > 0)
+          
+          # filtering
+          nonzero.prop.2 <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
+          filtr.2 = nonzero.prop.2 >= prev.filter
+          data[, which(!filtr.2)] = NA
+          
           cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
-          tmp.MAST <- MAST(data)
-          result.MAST$coef[[s]] <- tmp.MAST[[1]][1:3, ] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
-          result.MAST$pval[[s]] <- tmp.MAST[[2]][1:3, ] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
-          result.MAST$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
+          cat("Remaining genes after screening: ", sum(filtr.2), "out of ", length(filtr.2), ".\n")
+          
+          index.filtered = 
+            apply(data[, 1:n.gene], 2, function(x) all(is.na(x))) %>% # filtered gene indices
+            {which(!.)} %>% as.numeric
+          index.meta = grepl("^y\\.", names(data)) %>% "!"(.) %>% which
+          index.filtered.meta = c(index.filtered, index.meta)
+          
+          # MAST
+          print("MAST")
+          tmp.MAST <- MAST(data[, index.filtered.meta])
+          result.MAST$coef[[s]][, index.filtered] <- tmp.MAST[[1]][1:3, ] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
+          result.MAST$pval[[s]][, index.filtered] <- tmp.MAST[[2]][1:3, ] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
+          result.MAST$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+          
+          print("DESeq2")
+          tmp.DS2 <- DS2(data[, index.filtered.meta])
+          result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
+          result.DS2$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
+          result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+          
+          print("MGS")
+          tmp.MGS <- mgs(data[, index.filtered.meta])
+          result.MGS$coef[[s]][index.filtered] <- tmp.MGS[, "Estimate"] #coef.
+          result.MGS$pval[[s]][index.filtered] <- tmp.MGS[, "pval"] #pval.
+          result.MGS$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
         }
         
         # plug in back the MAST result in the main object.
         result$MAST <- result.MAST
+        result$DS2 <- result.DS2
+        result$MGS <- result.MGS
         
         
         #### statistics
@@ -178,62 +234,28 @@ for (i in 1:10) {
               s
             })
     
-          
-    ### More MGS replicates (M = 10 in total)
-        result.MGS <- list(coef = list(), pval = list())
-        result.MGS$coef[[1]] <- result$coef["MGS", ]
-        result.MGS$pval[[1]] <- result$pval["MGS", ]
-        result.MGS$nonzero.prop[[1]] <- result$nonzero.prop
         
-        message("More MGS replicates (s):\n")
-        for (s in 2:M) {
-          cat("MGS replicate s = ", s, "\n")
-          set.seed(s*10^5 + i*10^3 + j*10^2 + k)
-          data = do.call(r.sim, dat.args)
-          data %<>% dplyr::filter(sampleSum > 0)
-          cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
-          tmp.MGS <- mgs(data)
-          result.MGS$coef[[s]] <- tmp.MGS[, "Estimate"] #coef.
-          result.MGS$pval[[s]] <- tmp.MGS[, "pval"] #pval.
-          result.MGS$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
-        }
-        
-        result$MGS <- result.MGS
-        #### statistics
-        # 2.1 NA replacement   # This is not actually needed, but for consistency of data (btw first replicate and the rest)
-        # index.MGS <- result$pval %>% rownames() %>% {grep("MGS", .)} #5, 6, 7
-        
-        # 2.2 MGS NA replacement for each replicate
-        # result$MGS$pval <- 
-        #   lapply(result$MGS$pval, function(s) {
-        #     # step 1. getting NA addresses
-        #     na.index = s %>% is.na %>% which
-        #     # step 2. replacing with nonzero model values
-        #     s[na.index] = s[2,na.index]
-        #     # step 3. getting NA addresses again and replace with zero model values.
-        #     na.index = s[3,] %>% is.na %>% which
-        #     s[3,na.index] = s[1,na.index]
-        #     s
-        #   })
           
     # 3. Statistics
     # 3.1 statistics for all method (including first replicate of MAST, which is redundant)
-    index.regular <- result$nonzero.prop >= regular
-    #result$pval[index.twopart, !index.regular] <- NA    # removing irregular genes for two-part models only.
-    result$pval[, !index.regular] <- NA    # removing irregular genes.
+    
+    ## This part is not needed as it is done in the filtering step.
+    # index.regular <- result$nonzero.prop >= prev.filter
+    # result$pval[, !index.regular] <- NA    # removing irregular genes.
     
     
     stat.power = result$pval %>% 
       apply(1, function(x) {ifelse(mean(is.na(x)) >= cutoff, NA, mean(x<=sig, na.rm=TRUE))})
     stat.irregular = result$pval %>% 
-      apply(1, function(x) {ifelse(sum(is.na(x))/length(x)>0.9, NA, mean(ifelse(is.na(x), 1, x) <= sig, na.rm=TRUE))})
+      apply(1, function(x) {ifelse(sum(is.na(x))/length(x) > 0.9, NA, mean(ifelse(is.na(x), 1, x) <= sig, na.rm=TRUE))})
     stat.na.prop = result$pval %>% apply(1, function(x) {mean(is.na(x))})
     
     # 3.2 statistics for MAST replicates
-      for (m in 1:M) {
-        index.regular.m <- result$MAST$nonzero.prop[[m]] >= regular
-        result$MAST$pval[[m]][, !index.regular.m] <- NA
-      }
+      ## This part is not needed as it is done in the filtering step.
+      # for (m in 1:M) {
+      #   index.regular.m <- result$MAST$nonzero.prop[[m]] >= prev.filter
+      #   result$MAST$pval[[m]][, !index.regular.m] <- NA
+      # }
       
     stat.power[c("MAST.nonz", "MAST.zero", "MAST.glob")] <-
       result$MAST$pval %>% 
@@ -254,10 +276,11 @@ for (i in 1:10) {
     
     
     # 3.3 statistics for MGS replicates
-    for (m in 1:M) {
-      index.regular.m <- result$MGS$nonzero.prop[[m]] >= regular
-      result$MGS$pval[[m]][!index.regular.m] <- NA
-    }
+    ## This part is not needed as it is done in the filtering step.
+    # for (m in 1:M) {
+    #   index.regular.m <- result$MGS$nonzero.prop[[m]] >= prev.filter
+    #   result$MGS$pval[[m]][!index.regular.m] <- NA
+    # }
     
     stat.power["MGS"] <-
       result$MGS$pval %>% 
@@ -274,6 +297,24 @@ for (i in 1:10) {
       sapply( function(x)  {mean(is.na(x))}) %>%
       mean(na.rm = TRUE)
     gc()
+    
+    
+    stat.power["DESeq2"] <-
+      result$DS2$pval %>% 
+      sapply( function(x) {ifelse(mean(is.na(x)) >= cutoff, NA, mean(x<=sig, na.rm=TRUE))}) %>%
+      mean(na.rm = TRUE)  # vector of three
+    
+    stat.irregular["DESeq2"] <- #stat based on NA p-val = 1.
+      result$DS2$pval %>% 
+      sapply(function(x)  {mean(ifelse(is.na(x), 1, x)<=sig, na.rm=TRUE)}) %>%
+      mean(na.rm = TRUE)
+    
+    stat.na.prop["DESeq2"] <-
+      result$DS2$pval %>% 
+      sapply( function(x)  {mean(is.na(x))}) %>%
+      mean(na.rm = TRUE)
+    gc()
+    
 # Save the result
     stat.comb <- rbind(stat.power, stat.irregular, stat.na.prop)
     

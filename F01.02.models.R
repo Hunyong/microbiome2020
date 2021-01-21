@@ -37,14 +37,20 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   
   # 0.1 data
   data2 <- data
-  gsub("y\\.","",names(data)) %>% as.numeric %>% na.omit %>% as.numeric -> genes
+  genes <- gsub("^y\\.", "", names(data)) %>% as.numeric %>% na.omit %>% as.numeric
   if (n.gene > genes[length(genes)]) stop(paste0("Only ", length(genes), " genes provided, while trying to do ", n.gene, " simulations."))
   genes = genes[1:min(n.gene,length(genes))]
+  
+  index.filtered = 
+    apply(data[, genes], 2, function(x) all(is.na(x))) %>% # filtered gene indices
+    {which(!.)} %>% as.numeric
+  index.meta = grepl("^y\\.", names(data)) %>% "!"(.) %>% which
+  index.filtered.meta = c(index.filtered, index.meta)
   
   data = data.frame(data[,1:length(genes)], phenotype = data$phenotype, batch = data$batch)
   ## print(head(data))    (No longer need to check data)
   if (!"sampleSum" %in% names(data2)) {
-    data$sampleSum <- data %>% dplyr::select(-phenotype, - batch) %>% apply(1, sum)
+    data$sampleSum <- data %>% dplyr::select(-phenotype, - batch) %>% apply(1, sum, na.rm = TRUE)
   } else {
     data$sampleSum <- data2$sampleSum
   }
@@ -56,7 +62,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     for (l in genes) {
       if (l %% 30 == 0) cat (" l = ",l," ")
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
-      if (sum(data.l$y)==0) {
+      if (sum(data.l$y, na.rm = TRUE)==0) {
         tmp <- data.frame(coef = rep(NA,3), pval = NA)
       } else {
         ## print(data[,l]) (For debug only)
@@ -77,7 +83,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       # cat (l," ")
       if (l %% 200 == 0) {cat(l, " ")}
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
-      if (sum(data.l$y)==0) {
+      if (sum(data.l$y, na.rm = TRUE)==0) {
         tmp <- data.frame(coef = NA, pval = NA)
       } else {
         tmp <- LN(data.l)  #log normal
@@ -92,10 +98,10 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   if(!MAST.skip){
     # tmp <- MAST(data)  #MAST
     # tmp <- data.frame(coef = rep(NA,3), pval = NA)    #MAST maybe not applicable
-    tmp <- MAST(data)
-    result[[1]][c("MAST.nonz", "MAST.zero", "MAST.glob"), ] <- tmp[[1]][1:3,] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
-    result[[2]][c("MAST.nonz", "MAST.zero", "MAST.glob"), ] <- tmp[[2]][1:3,] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
-    result[[2]]["MAST.min", ] <- pmin(tmp[[2]][1,], tmp[[2]][2,], na.rm = TRUE)
+    tmp <- MAST(data[, index.filtered.meta])
+    result[[1]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- tmp[[1]][1:3,] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
+    result[[2]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- tmp[[2]][1:3,] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
+    result[[2]]["MAST.min", index.filtered] <- pmin(tmp[[2]][1,], tmp[[2]][2,], na.rm = TRUE)
   } else {cat("MAST is skipped")}
   
   #8. KW
@@ -105,7 +111,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       # cat (l," ")
       if (l %% 200 == 0) {cat(l, " ")}
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
-      if (sum(data.l$y)==0) {
+      if (sum(data.l$y, na.rm = TRUE)==0) {
         tmp <- data.frame(coef = NA, pval = NA)
       } else {
         tmp <- KW(data.l)  #KW
@@ -122,7 +128,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       # cat (l," ")
       if (l %% 200 == 0) {cat(l, " ")}
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
-      if (sum(data.l$y)==0) {
+      if (sum(data.l$y, na.rm = TRUE)==0) {
         tmp <- data.frame(coef = rep(NA,3), pval = NA)
       } else {
         tmp <- Wagner(data.l, zeroModel = "logistic", suppressWarning = suppressWarnWagner)
@@ -136,10 +142,10 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   #12. De2
   cat("\n12. DESeq2\n")
   if(!De2.skip){
-    tmp <- DS2(data)
+    tmp <- DS2(data[, index.filtered.meta])
     
-    result[[1]]["DESeq2", ] <- tmp[,1] #coef.
-    result[[2]]["DESeq2", ] <- tmp[,2] #pval.
+    result[[1]]["DESeq2", index.filtered] <- tmp[,1] #coef.
+    result[[2]]["DESeq2", index.filtered] <- tmp[,2] #pval.
     
   }
   
@@ -149,7 +155,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       # cat (l," ")
       if (l %% 200 == 0) {cat(l, " ")}
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
-      if (sum(data.l$y)==0) {
+      if (sum(data.l$y, na.rm = TRUE)==0) {
         tmp <- data.frame(coef = NA, pval = NA)
       } else {
         tmp <- WRS(data.l)  #KW
@@ -162,9 +168,9 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   #14. metagenomeSeq
   cat("14 metagenomeSeq\n")
   if(!MGS.skip){
-    tmp <- mgs(data)
-    result[[1]]["MGS", ] <- tmp[, "Estimate"] #coef.
-    result[[2]]["MGS", ] <- tmp[, "pval"]     #pval.
+    tmp <- mgs(data[, index.filtered.meta])
+    result[[1]]["MGS", index.filtered] <- tmp[, "Estimate"] #coef.
+    result[[2]]["MGS", index.filtered] <- tmp[, "pval"]     #pval.
   } else {cat("MGS is skipped")}
   
   #15. (reserved)
@@ -493,7 +499,58 @@ if (FALSE) {# example
 
 ### 12. DESeq2
 DS2 <- function (data.l) {
-tmp.dat <<- data.l
+# tmp.dat <<- data.l
+  ### Much part of this code is from 
+  # https://github.com/mikelove/zinbwave-deseq2/blob/master/zinbwave-deseq2.knit.md
+  
+  require(DESeq2)
+  require(zinbwave)
+  require(scran)
+  require(BiocParallel)
+  
+  keep <- rowSums(counts(zinb) >= 2) >= 10
+
+  ### Getting the ZINB-wave weights
+  zinb <- DESeqDataSetFromMatrix(countData = round(t(data.l[, grepl("^y", names(data.l))]),0),
+                                colData = data.l[, !grepl("^y", names(data.l))],
+                                design= ~ batch + phenotype)
+  
+  # # we need to reorganize the assays in the SumExp from splatter
+  # nms <- c("counts", setdiff(assayNames(zinb), "counts"))
+  # assays(zinb) <- assays(zinb)[nms]
+  assay(zinb) <- as.matrix(assay(zinb))
+  X = data.matrix(data.l[, c("phenotype", "batch")])
+  # epsilon setting as recommended by the ZINB-WaVE integration paper
+  zinb <- zinbwave(zinb, X = X, K=0, observationalWeights=TRUE,
+                   BPPARAM=BiocParallel::SerialParam(), epsilon=1e12)
+
+  dds <- DESeqDataSet(zinb, design= ~ batch + phenotype)
+  
+  # Use size factors from the scran package
+  scr <- computeSumFactors(dds)
+  sizeFactors(dds) <- sizeFactors(scr)
+  
+  dds <- DESeq(dds, test="LRT", reduced=~1,
+               minmu=1e-6, minRep=Inf)
+  # plotDispEsts(dds)
+  
+  keepForDispTrend <- rowSums(counts(dds) >= 3) >= 10
+  dds2 <- estimateDispersionsFit(dds[keepForDispTrend,], fitType = "local")
+  # parametric models still fail. Use the local estimation.
+  # plotDispEsts(dds2, ylim=c(1e-3,1))
+  
+  dispersionFunction(dds) <- dispersionFunction(dds2)
+  dds <- estimateDispersionsMAP(dds)
+  dds <- nbinomLRT(dds, reduced=~1, minmu=1e-6)
+  
+  # filtering is already done.
+  res <- results(dds, independentFiltering = FALSE, name = "phenotype_H_vs_D")
+  out = matrix(c(res$log2FoldChange, res$pvalue), ncol = 2)
+  colnames(out) = c("Estimate", "pval")
+  return(out)
+}
+DS2.old <- function (data.l) {
+  # tmp.dat <<- data.l
   require(DESeq2)
   dds <- DESeqDataSetFromMatrix(countData = round(t(data.l[, grepl("^y", names(data.l))]),0),
                                 colData = data.l[, !grepl("^y", names(data.l))],
@@ -545,17 +602,17 @@ mgs.base <- function (data) {
   cData = data %>% transmute(samples = 1:n(), phenotype, batch)
   data = t(as.matrix(data[,gene]))
   dimnames(data) = list(gene.name, cData$samples)
-  
   obj = newMRexperiment(counts = data, 
                         phenoData = AnnotatedDataFrame(cData), 
-                        featureData = AnnotatedDataFrame(data.frame(primerid = gene.name)))
+                        featureData = AnnotatedDataFrame(data.frame(primerid = gene.name, 
+                                                                    row.names = gene.name)))
   datp = cumNormStat(data, pFlag = TRUE, main = "Trimmed lung data")
   obj = cumNorm(obj, p = datp)
   normFactors(obj)
   mod <- model.matrix(~ 1 + phenotype, data = cData)
   # mod <- model.matrix(~ 1 + phenotype + batch, data = cData) # "Can't analyze currently."
   mgsRes = fitFeatureModel(obj, mod)
-  mgsRes = cbind(mgsRes$fitZeroLogNormal$logFC, mgsRes$pvalues)
+  mgsRes = cbind(mgsRes@fitZeroLogNormal$logFC, mgsRes@pvalues)
   colnames(mgsRes) = c("Estimate", "pval")
   
   return(mgsRes)

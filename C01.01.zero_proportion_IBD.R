@@ -58,3 +58,6 @@ ggsave(zp.RNA, "figure/C0101zeroproportion_IBD.png")
 zp <-
   plot_grid(zp.DNA, zp.RNA + ylab(NULL), labels = "AUTO", rel_widths = c(1.12, 1), label_x = c(0.2, 0.1))
 save_plot("figure/C0101zeroproportion_IBD.png", plot = zp, base_width = 9, base_height = 5)
+
+
+dat.new.RNA %>% apply(1, function(x) any(x>0, na.rm = T)) %>% sum
