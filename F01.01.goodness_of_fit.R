@@ -33,6 +33,7 @@ param.zinb2 <- function(zinb.obj) {
   return(c(mu = mu, sig = sig, pi = pi))
 }
 
+con = gamlss.control(n.cyc = 100, trace = FALSE)
 est.beta <- function(data) { # data is positive relative abundance (tpm.i[tpm.i > 0]/const)
   full.beta  <- gamlss(data ~ 1, family = BE(sigma.link = "log"), control = con)
   param.beta(full.beta)
@@ -48,6 +49,7 @@ est.ln <- function(data) { # data is positive abundance (otu.i[otu.i > 0])
 
 ks.empirical <- function(data, model = "beta", return.est = FALSE, 
                          ks.pval = FALSE, lilliefors = TRUE, n.lilliefors = 100) {
+  require(dplyr)
   est  = switch(model, beta = est.beta, gamma = est.gamma, ln = est.ln)
   pFUN = switch(model, beta = "pbeta", gamma = "pGA", ln = "pLOGNO")
   rFUN = switch(model, beta = rbeta, gamma = rGA, ln = rLOGNO)
