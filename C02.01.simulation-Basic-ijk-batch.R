@@ -67,7 +67,6 @@ for (i in 1:10) {
     source("F01.02.models-base.R")
     source("F01.02.models.R")
     source("F01.02.summary.gamlss2.R")
-     #BiocManager::install("MAST")
     library(MAST)
     library(coin)
     library(metagenomeSeq)
@@ -77,10 +76,6 @@ for (i in 1:10) {
     # sessionInfo()
     
     #parameter1; delta; kappa
-    # (parameter = switch(model, 
-    #                     zinb = parameter4, 
-    #                     zig = parameter5, 
-    #                     ziln = parameter5))
     (parameter = switch(model, 
                         zinb = parameterNB2, 
                         zig = parameterLN2, 

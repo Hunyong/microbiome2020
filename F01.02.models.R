@@ -72,7 +72,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       result[[2]][c("LB.nonz", "LB.zero", "LB.glob"), l] <- tmp[1:3, 2] #pval. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
       if (any(!is.na(tmp[1:2, 2]))) result[[2]]["LB.min", l] <- min(tmp[1:2, 2], na.rm = TRUE)
     }
-  } else {cat("LB is skipped")}
+  } else {cat("LB is skipped\n")}
   
   
   #4. LN
@@ -91,7 +91,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       result[[1]]["LN", l] <- tmp[1,1] #coef.
       result[[2]]["LN", l] <- tmp[1,2] #pval.
     }
-  } else {cat("LN is skipped")}
+  } else {cat("LN is skipped\n")}
   
   #5-7. MAST
   cat("\n5-7. MAST\n")
@@ -102,7 +102,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     result[[1]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- tmp[[1]][1:3,] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
     result[[2]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- tmp[[2]][1:3,] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
     result[[2]]["MAST.min", index.filtered] <- pmin(tmp[[2]][1,], tmp[[2]][2,], na.rm = TRUE)
-  } else {cat("MAST is skipped")}
+  } else {cat("MAST is skipped\n")}
   
   #8. KW
   cat("\n8. Kruskal Wallis\n l = ")
@@ -119,7 +119,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       result[[1]]["KW", l] <- tmp[1,1] #coef.
       result[[2]]["KW", l] <- tmp[1,2] #pval.
     }
-  } else {cat("KW is skipped")}
+  } else {cat("KW is skipped\n")}
   
   #9-11. Two-part KW
   cat("\n9-11. Two-part KW (Wagner)\n l = ")
@@ -137,7 +137,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       result[[2]][c("Wg.nonz", "Wg.zero", "Wg.glob"), l] <- tmp[1:3,2] #pval.
       if (any(!is.na(tmp[1:2, 2]))) result[[2]]["Wg.min", l] <- min(tmp[1:2, 2], na.rm = TRUE)
     }
-  } else {cat("Wg is skipped")}
+  } else {cat("Wg is skipped\n")}
   
   #12. De2
   cat("\n12. DESeq2\n")
@@ -147,7 +147,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     result[[1]]["DESeq2", index.filtered] <- tmp[,1] #coef.
     result[[2]]["DESeq2", index.filtered] <- tmp[,2] #pval.
     
-  }
+  } else {cat("DESeq2 is skipped\n")}
   
   cat("\n13. WRS\n l = ")
   if (!WRS.skip){
@@ -163,7 +163,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       result[[1]]["WRS", l] <- tmp[1,1] #coef.
       result[[2]]["WRS", l] <- tmp[1,2] #pval.
     }
-  } else {cat("WRS is skipped")}
+  } else {cat("WRS is skipped\n")}
   
   #14. metagenomeSeq
   cat("14 metagenomeSeq\n")
@@ -171,7 +171,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     tmp <- mgs(data[, index.filtered.meta])
     result[[1]]["MGS", index.filtered] <- tmp[, "Estimate"] #coef.
     result[[2]]["MGS", index.filtered] <- tmp[, "pval"]     #pval.
-  } else {cat("MGS is skipped")}
+  } else {cat("MGS is skipped\n")}
   
   #15. (reserved)
   cat("15. Reserved\n")
@@ -587,7 +587,7 @@ WRS <- function (data) {
 
 ### 14. metagenomeSeq
 mgs.base <- function (data) {
-  
+
   require (metagenomeSeq)
   
   # whole-data-level test. not adequate for inidivdual-gene-level test.
