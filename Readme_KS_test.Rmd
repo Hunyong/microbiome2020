@@ -5,13 +5,11 @@ date: Jan 20, 2020
 output: html_document
 ---
 
-This can be implemented by the following example code.  
-The code includes testing the Beta, log-normal, and gamma distributions. 
-However, other distributions can be included by tailoring the code.  
-The Kruskal-Wallis test works for continuous distributions.  
-The distinction between the Kruskall-Wallis test and the Lilliefors procedure is that
-the former tests the goodness of fit of data to a distribution with a fixed set of parameters,
-while the latter tests that with an estimated distribution which is often the case in practice.  
+This can be implemented by the following example code. The code includes testing the Beta, log-normal, and gamma distributions. However, other distributions can be included by tailoring the code.  
+
+The Kruskal-Wallis test works for continuous distributions. For mixed distributions between continuous and zero mass, assuming zero mass has perfect fit, the goodness of fit for the continuous part can be tested.
+
+The distinction between the Kruskall-Wallis test and the Lilliefors procedure is that the former tests the goodness of fit of data to a distribution with a fixed set of parameters, while the latter tests that with an estimated distribution which is often the case in practice.  
 
 
 # example - Beta distribution
