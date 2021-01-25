@@ -508,8 +508,6 @@ DS2 <- function (data.l) {
   require(scran)
   require(BiocParallel)
   
-  keep <- rowSums(counts(zinb) >= 2) >= 10
-
   ### Getting the ZINB-wave weights
   zinb <- DESeqDataSetFromMatrix(countData = round(t(data.l[, grepl("^y", names(data.l))]),0),
                                 colData = data.l[, !grepl("^y", names(data.l))],
