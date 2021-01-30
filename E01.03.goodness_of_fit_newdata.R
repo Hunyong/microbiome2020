@@ -24,15 +24,16 @@ for (type in c("genebact", "bact", "gene")) {
   # DRNA = "RNA"; DR.no = 2
   RNA      = data$otu  # proportion (0~1)
   
-  # scale1 <- 5e+5 * if (type == "bact") {1/2500} else 1
-  # scale1 <- if (type == "bact") 10 else 1e+3
-  scale1 <- if (type == "bact") 500 else 1e+5
+  
+  n.genes     = dim(RNA)[1]
+  const = 10 * n.genes # actual scale (rel-abundance to compositional)
+  # const <- if (type == "bact") 500 else 1e+5
   
   DataComp    = RNA  # for LB tests
-  DataTPM     = RNA * scale1
+  DataTPM     = RNA * const
   if (nrm == "asin") {
-    DataTPM = asn(DataTPM/scale1) * scale1
     DataComp = asn(DataComp)
+    DataTPM = DataComp * const
   }
   
   
@@ -70,7 +71,7 @@ for (type in c("genebact", "bact", "gene")) {
     j = i.sample[i]
     tpm.i[] <- as.numeric(DataTPM[j, ])
     comp.i[] <- as.numeric(DataComp[j, ])
-    if (nrm == "asin") tpm.i = asn(tpm.i / scale1) * scale1
+    if (nrm == "asin") tpm.i = asn(tpm.i / const) * const
     taxa.i  <- rownames(DataTPM)[j] %>% gsub(" \\(TOTAL\\)", "", .) %>% gsub("\\_", " ", .)
     # name.i  <- names(DataRPK)[j]
     # if (mean(dat.reg$composition > 0) < 0.1) next
@@ -86,7 +87,7 @@ for (type in c("genebact", "bact", "gene")) {
     ## plots
     if (i <= 0) {
       p1  <- 
-        qqplot1(values = tpm.i[tpm.i > 0]/scale1, ks.pval = gof.beta[i, "ks.pval"],
+        qqplot1(values = tpm.i[tpm.i > 0]/const, ks.pval = gof.beta[i, "ks.pval"],
                 pbeta, shape1 = gof.beta[i, "alpha"], shape2 = gof.beta[i, "beta"], title = "Beta")
       p2 <-
         qqplot1(values = otu.i[otu.i > 0], ks.pval = gof.gamma[i, "ks.pval"], 
@@ -148,7 +149,7 @@ if (0) {
       xlab("KS (Lilliefors) test p-values") + ggtitle("Lloyd-Price et al. 2019 data (n = 104)") + 
       geom_vline(xintercept = 0.05, col = "red") + 
       geom_text(data = gof.stat, aes(pval, count, label = reject)) +
-      ggtitle("(C) IBD (n = 104)") + 
+      ggtitle("(B) IBD (n = 104)") + 
       theme_bw()
     # annotate("text", x = 0.75, y = 25, label = paste0("%(p < 0.05) = ", mean(gof.gamma[, "ks.pval"] < 0.05)))
     ggsave(paste0("figure/C0102KS_newdata-p-Histogram_", type, ".png"), width = 9, height = 6)
