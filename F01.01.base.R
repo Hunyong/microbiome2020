@@ -3,10 +3,10 @@
 ### 1.1 parameter estimator for ZINB ###
   library(pscl)
   
-  ZINB.ML <- function(yvec, notation="mtp") {
+  ZINB.ML <- function(yvec, parametrization="mtp") {
     #notation (parametrization): June 2020.
     # mtp: mu-theta-pi
-    if (!notation %in% c("mtp")) {stop("Notation is not correctly specified.")}
+    if (!parametrization %in% c("mtp")) {stop("parametrization is not correctly specified.")}
     
     # d <- xvec %>% unique %>% length
     # if (d==1) {formula = y~1} else if (d>2) {
@@ -15,6 +15,7 @@
     # }
     data = data.frame(y=as.numeric(yvec) %>% round)
     a <- pscl::zeroinfl(formula = y ~ 1, data = data, dist = "negbin", EM = FALSE)
+    
     theta <- a$theta # theta (overdispersion phi. var = mu + mu^2 * phi)
     # for theta parameter, see http://www.jstatsoft.org/v27/i08/.
     bg <- a$coef # regression (beta, gamma)
@@ -23,7 +24,7 @@
     mu.nonzero = exp(cumsum(bg[[1]])) # e^beta
     # beta = theta/mu.nonzero
     
-    # if (notation == "mtp") {
+    # if (parametrization == "mtp") {
     result <- c(mu = mu.nonzero, theta = theta, pi = pp)
     return(result)
   }
@@ -39,8 +40,8 @@
     return(a)
   }
   
-  ZINB.ML.time <- function(yvec, notation="mtp",...) {
-    timeout(expression = ZINB.ML(yvec = yvec, notation=notation), ...) 
+  ZINB.ML.time <- function(yvec, parametrization="mtp", ...) {
+    timeout(expression = ZINB.ML(yvec = yvec, parametrization=parametrization), ...) 
   }
   
 ### 1.2 random number generator for ZINB ###
@@ -73,8 +74,8 @@ if (FALSE) { #example
   
   i=100
   tmp = data.frame(y=as.numeric(DataRPK116[i,-1]) %>% round, x = 1)
-  ZINB.ML(tmp$y, tmp$x, notation="abp")
-  ZINB.ML(tmp$y, tmp$x, notation="mtp")
+  ZINB.ML(tmp$y, tmp$x, parametrization="abp")
+  ZINB.ML(tmp$y, tmp$x, parametrization="mtp")
   
   tmp = data.frame(y=as.numeric(DataRPK116[i,-1]) %>% round, x = DataMeta116$ECC)
   ZINB.ML(tmp$y, tmp$x)
