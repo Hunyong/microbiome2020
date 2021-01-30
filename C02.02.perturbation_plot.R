@@ -8,9 +8,9 @@ pertplot <- function(model= "ZILN", size)
   k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
   ylim =c(0,1)
   parameter = switch(model, 
-                     zinb = parameterNB2, 
-                     zig = parameterLN2, 
-                     ziln = parameterLN2)
+                     zinb = parameterNB, 
+                     zig = parameterLN, 
+                     ziln = parameterLN)
   param.k = apply(parameter[k.index,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))
   res <- NULL
   for(pe in c(0,0.25,0.5))

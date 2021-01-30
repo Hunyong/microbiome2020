@@ -77,9 +77,9 @@ for (i in 1:10) {
     
     #parameter1; delta; kappa
     (parameter = switch(model, 
-                        zinb = parameterNB2, 
-                        zig = parameterLN2, 
-                        ziln = parameterLN2))
+                        zinb = parameterNB, 
+                        zig = parameterLN, 
+                        ziln = parameterLN))
     (delta = delta1)
     (kappa = kappa1)
     

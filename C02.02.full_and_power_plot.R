@@ -6,9 +6,9 @@ fullplot <- function(size,model)
 {
   
   parameter = switch(model, 
-                     zinb = parameterNB2, 
-                     zig = parameterLN2, 
-                     ziln = parameterLN2)
+                     zinb = parameterNB, 
+                     zig = parameterLN, 
+                     ziln = parameterLN)
   k.index = dim(parameter)[1]
   param.k = apply(parameter[,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))
   ylim = c(0,1)
@@ -117,9 +117,9 @@ powerplot <- function(model,size, width = 20, height=12,
                       fn = paste0("figure/", model,"_power_size",size,".png"))
 {
   parameter = switch(model, 
-                     zinb = parameterNB2, 
-                     zig = parameterLN2, 
-                     ziln = parameterLN2)
+                     zinb = parameterNB, 
+                     zig = parameterLN, 
+                     ziln = parameterLN)
   j.index <- c(1,5,3)
   k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
   param.k = apply(parameter[k.index,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))

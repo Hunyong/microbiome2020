@@ -19,61 +19,18 @@ method = gsub("\\..*$","",method.stat) %>% unique
 ### 2.0 distribution parameters
 # parameter1 = basic scenarios
 
-expand.grid(m=c(2, 3, 5, 10), t=c(0.5, 1), p=c(.3, .5, .6, .9, .95)) %>% # normal scenarios 1-40
-  rbind(expand.grid(m=c(2, 3, 5), t=c(5), p=c(.9, .95))) %>%  # extreme scenario 41-46
+expand.grid(m=c(1, 10, 50), t=c(0.5, 2), p=c(.3, .6, .65, .7, .75, .8, .85, .9, .95)) %>% # normal scenarios 1-54 (t = sigma)
   data.frame() %>%
   mutate(no = 1:n()) %>%       # add scenario numbers (no)
   dplyr::select(no, everything())  -> # reorder columns
-  parameter1
+  parameterLN
 
-expand.grid(m=c(2, 3, 5, 10), t=c(0.5, 1), p=c(.65, .7, .75, .8, .85 )) %>% # normal scenarios 
+
+expand.grid(m=c(1, 10, 50), t=c(1, 5), p=c(.3, .6, .65, .7, .75, .8, .85, .9, .95)) %>% # normal scenarios 1-54
   data.frame() %>%
   mutate(no = 1:n()) %>%       # add scenario numbers (no)
   dplyr::select(no, everything())  -> # reorder columns
-  parameter2
-
-expand.grid(m=c(2, 3, 5, 10), t=c(0.5, 1), p=c(.3, .5, .6 ,.7 ,.8, .9, .95)) %>% # normal scenarios 1-40
-  rbind(expand.grid(m=c(2, 3, 5), t=c(5), p=c(.9, .95))) %>%  # extreme scenario 41-46
-  data.frame() %>%
-  mutate(no = 1:n()) %>%       # add scenario numbers (no)
-  dplyr::select(no, everything())  -> # reorder columns
-  parameter3
-
-expand.grid(m=c(2, 5, 10), t=c(0.5, 1), p=c(.3, .6, .65, .7, .75, .8, .85, .9, .95)) %>% # normal scenarios 1-30
-  #rbind(expand.grid(m=c(2, 5), t=c(5), p=c(.9, .95))) %>%  # extreme scenario 31-34
-  data.frame() %>%
-  mutate(no = 1:n()) %>%       # add scenario numbers (no)
-  dplyr::select(no, everything())  -> # reorder columns
-  parameter4
-
-
-expand.grid(m=c(1, 2, 3), t=c(0.5, 1), p=c(.3, .6 , .8, .9, .95)) %>% # normal scenarios 1-30 (t = sigma)
-  rbind(expand.grid(m=c(2), t=c(0.1), p=c(.9, .95))) %>%  # extreme scenario 31-32
-  data.frame() %>%
-  mutate(no = 1:n()) %>%       # add scenario numbers (no)
-  dplyr::select(no, everything())  -> # reorder columns
-  parameterLN1
-
-expand.grid(m=c(2, 4, 6), t=c(1, 3), p=c(.3, .6, .65, .7, .75, .8, .85, .9, .95)) %>% # normal scenarios 1-30 (t = sigma)
-  #rbind(expand.grid(m=c(6), t=c(5), p=c(.9, .95))) %>%  # extreme scenario 31-32
-  data.frame() %>%
-  mutate(no = 1:n()) %>%       # add scenario numbers (no)
-  dplyr::select(no, everything())  -> # reorder columns
-  parameter5
-
-
-expand.grid(m=c(1, 10, 20), t=c(0.2, 1), p=c(.3, .6, .65, .7, .75, .8, .85, .9, .95)) %>% # normal scenarios 1-54 (t = sigma)
-  data.frame() %>%
-  mutate(no = 1:n()) %>%       # add scenario numbers (no)
-  dplyr::select(no, everything())  -> # reorder columns
-  parameterLN2
-
-
-expand.grid(m=c(1, 10, 20), t=c(1, 5), p=c(.3, .6, .65, .7, .75, .8, .85, .9, .95)) %>% # normal scenarios 1-54
-  data.frame() %>%
-  mutate(no = 1:n()) %>%       # add scenario numbers (no)
-  dplyr::select(no, everything())  -> # reorder columns
-  parameterNB2
+  parameterNB
 
 
 
