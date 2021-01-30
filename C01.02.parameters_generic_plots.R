@@ -1,8 +1,9 @@
 ### plots, 3d plots, and ranges
 library(xtable);
 library(scatterplot3d)
+library(cowplot)
 nrm = "tpm5"
-zoe = 1 # zoe = "IBD"
+zoe = 2 # zoe = "IBD"
 zoe.nm = if (zoe %in% 1:2) paste0("_zoe", zoe) else "_NEWDATA"
 
 DRNA = "RNA"
@@ -12,9 +13,11 @@ DRNA.name = ifelse(DRNA == "DNA", "_DNA", "")
 type = "gene"
 model = "ziln"
 for (type in c("gene", "genebact", "bact")) {
+  # if(type != "bact") next
   for (model in c("ziln", "zinb")) {
-if (zoe != 1) 
-  if (type != "gene" | model != "ziln") next
+    print(type); print(model)
+# if (zoe != 1) 
+#   if (type != "gene" | model != "ziln") next
     a <-
       data.frame(params = rep(c("theta", "delta", "kappa"), each = 3), 
                  params2 = c("mu", "th", "pi"), 
@@ -28,8 +31,25 @@ if (zoe != 1)
       a[2, c("Q1", "Q2", "Q3")] <- cond.est$theta %>% summary %>% round(1) %>% "["(c(2,3,5))#  %>% paste(collapse = ", ")
       a[3, c("Q1", "Q2", "Q3")] <- cond.est$pi %>% summary %>% round(2) %>% "["(c(2,3,5))#  %>% paste(collapse = ", ")
       
-      lim1 = min(max(cond.est$mu, na.rm = TRUE) * 1.05, a[1, "Q3"] * 5)
-      lim2 = min(max(cond.est$theta, na.rm = TRUE) * 1.05, a[2, "Q3"] * 5)
+      n.est = sum(!is.na(cond.est$mu))
+      cond.est$theta[cond.est$theta > 100] = NA
+      cond.est$mu[cond.est$mu > 100] = NA
+      n.irregular = n.est - sum(!is.na(cond.est$theta) & !is.na(cond.est$mu))
+      if (n.irregular / n.est > 0.3) 
+        warning(sprintf("There are more than %2.0f non regular thetas (%2.0f%%).", 
+                        n.irregular, n.irregular/n.est * 100))
+      # n.est = dim(na.omit(cond.est))[1]
+      # cond.est <- 
+      #   cond.est %>% dplyr::filter(theta < 1e+4) %T>% 
+      #   {n.regular = dim(na.omit(.))[1]; 
+      #    if(n.regular / n.est < 0.7)  warning(sprintf("There are more than %2.0f non regular thetas (%2.0f%%).", 
+      #                                                 n.est - n.regular, (1 - n.regular/n.est) * 100))}
+      
+      lim1 = max(cond.est$mu, na.rm = TRUE) * 1.05
+      lim2 = max(cond.est$theta, na.rm = TRUE) * 1.05
+      # lim1 = min(max(cond.est$mu, na.rm = TRUE) * 1.05, a[1, "Q3"] * 5)
+      # lim2 = min(max(cond.est$theta, na.rm = TRUE) * 1.05, a[2, "Q3"] * 5)
+      # lim2 = min(lim2, max(cond.est$theta[cond.est$theta <= lim2], na.rm = TRUE) * 1.05)
       
     # B. 3d plots
       p1_3d <- ~{
@@ -81,6 +101,10 @@ if (zoe != 1)
       #   lim.x = 50
       #   lim.y = 5
       # }
+      int_breaks <- function(x, n = 5) {
+        l <- pretty(x, n)
+        l[abs(l %% 1) < .Machine$double.eps ^ 0.5] 
+      }
       
       # 1st col of parameter selection
       cond.est.all %>%
@@ -94,6 +118,7 @@ if (zoe != 1)
                                     H2 = "tomato3")) +
         scale_shape_manual(name = "group",values=c(17, 15, 2, 0)) +
         xlim(c(0, lim1)) + ylim(c(0, lim2)) +
+        scale_y_continuous(breaks = int_breaks) +
         xlab(TeX('$\\mu$')) + ylab(TeX('$\\theta')) + # xlim(c(0, 50)) +
         #ggtitle("baseline parameter estimates") +
         theme_bw() +
@@ -185,6 +210,7 @@ if (zoe != 1)
         ylab(TeX('$\\delta_\\theta')) + 
         # ylim(if(model == "zinb") c(0, 5) else c(0, 5)) + xlim(c(0, 2)) +
         ylim(c(0, lim5)) + xlim(c(0, lim4)) +
+        scale_y_continuous(breaks = int_breaks) +
         #ggtitle(TeX("(|$\\delta_{\\mu}$|, |$\\delta_{\\theta}$|, |$\\delta_{\\pi}$|) estimates")) +
         theme_bw() +
         theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
@@ -262,6 +288,7 @@ if (zoe != 1)
       lim.x = a[7, "Q3"] * 10
       lim.y = a[8, "Q3"] * 10
       
+      
       cond.est.kappa.all %>%
         # dplyr::filter(kappa_theta < 50 & kappa_mu < 5) %>%
         ggplot(aes(kappa_mu, kappa_theta, col = disease, shape = disease)) +
@@ -271,6 +298,7 @@ if (zoe != 1)
         ylab(TeX('$\\kappa_\\theta')) + 
         # ylim(if(model == "zinb") c(0, 5) else c(0, 5)) + xlim(c(0, 2)) +
         ylim(c(0, lim8)) + xlim(c(0, lim7)) +
+        scale_y_continuous(breaks = int_breaks) +
         # ggtitle(TeX("(|$\\kappa_{\\mu}$|, |$\\kappa_{\\theta}$|, |$\\kappa_{\\pi}$|) estimates")) +
         theme_bw() +
         theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
