@@ -142,6 +142,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   #12. De2
   cat("\n12. DESeq2\n")
   if(!De2.skip){
+
     tmp <- DS2(data[, index.filtered.meta])
     
     result[[1]]["DESeq2", index.filtered] <- tmp[,1] #coef.
@@ -533,6 +534,12 @@ DS2 <- function (data.l) {
   # plotDispEsts(dds)
   
   keepForDispTrend <- rowSums(counts(dds) >= 3) >= 10
+  # If the filtering results in too few samples, relax the threshold. If the alternative does not work, return NA.
+  if (sum(keepForDispTrend) < 30) keepForDispTrend <- rowSums(counts(dds) >= 3) >= 5
+  if (sum(keepForDispTrend) < 30) {
+    warning("Dispersion is not stably estimated. NA's are returned.")
+    return(matrix(NA, ncol = 2, nrow = dim(dds)[1], dimnames = list(NULL, c("Estimate", "pval"))))
+  }
   dds2 <- estimateDispersionsFit(dds[keepForDispTrend,], fitType = "local")
   # parametric models still fail. Use the local estimation.
   # plotDispEsts(dds2, ylim=c(1e-3,1))
