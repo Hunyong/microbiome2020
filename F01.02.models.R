@@ -531,7 +531,7 @@ DS2 <- function (data.l) {
     # negative size factor is calculated. Filtering.
     keepForSizeComp <- rowSums(counts(dds) >= 3) >= 10
     if (sum(keepForSizeComp) < 30) keepForSizeComp <- rowSums(counts(dds) >= 3) >= 5
-    scr <- tryCatch({computeSumFactors(dds[keepForSizeComp, ])})
+    scr <- try({computeSumFactors(dds[keepForSizeComp, ])})
     if (class(scr)[1] == "try-error")
       return(matrix(NA, ncol = 2, nrow = dim(dds)[1], dimnames = list(NULL, c("Estimate", "pval"))))
   }
