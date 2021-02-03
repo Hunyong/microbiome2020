@@ -526,7 +526,15 @@ DS2 <- function (data.l) {
   dds <- DESeqDataSet(zinb, design= ~ batch + phenotype)
   
   # Use size factors from the scran package
-  scr <- computeSumFactors(dds)
+  scr <- try({computeSumFactors(dds)})
+  if (class(scr)[1] == "try-error") {
+    # negative size factor is calculated. Filtering.
+    keepForSizeComp <- rowSums(counts(dds) >= 3) >= 10
+    if (sum(keepForSizeComp) < 30) keepForSizeComp <- rowSums(counts(dds) >= 3) >= 5
+    scr <- tryCatch({computeSumFactors(dds[keepForSizeComp, ])})
+    if (class(scr)[1] == "try-error")
+      return(matrix(NA, ncol = 2, nrow = dim(dds)[1], dimnames = list(NULL, c("Estimate", "pval"))))
+  }
   sizeFactors(dds) <- sizeFactors(scr)
   
   dds <- DESeq(dds, test="LRT", reduced=~1,
