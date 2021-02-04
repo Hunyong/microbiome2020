@@ -509,8 +509,15 @@ DS2 <- function (data.l) {
   require(scran)
   require(BiocParallel)
   
+  ### Extra filter for zero counts out too sparse genes
+  col.otu = which(grepl("^y", names(data.l)))
+  col.meta = which(!grepl("^y", names(data.l)))
+  keepForTests <- colSums(round(data.l[, col.otu], 0) >= 1) >= 3  # This will be used again at the end.
+  data.l <- data.l[, c(col.otu[keepForTests], col.meta)]
+  
   ### Getting the ZINB-wave weights
-  zinb <- DESeqDataSetFromMatrix(countData = round(t(data.l[, grepl("^y", names(data.l))]),0),
+  col.otu = which(grepl("^y", names(data.l))) # updated
+  zinb <- DESeqDataSetFromMatrix(countData = round(t(data.l[, col.otu]),0),
                                 colData = data.l[, !grepl("^y", names(data.l))],
                                 design= ~ batch + phenotype)
   
@@ -558,7 +565,12 @@ DS2 <- function (data.l) {
   
   # filtering is already done.
   res <- results(dds, independentFiltering = FALSE, name = "phenotype_H_vs_D")
-  out = matrix(c(res$log2FoldChange, res$pvalue), ncol = 2)
+  
+  # insert filtered out NA results
+  out = matrix(NA, nrow = length(keepForTests), ncol = 2)
+  out[keepForTests, 1] = res$log2FoldChange
+  out[keepForTests, 2] = res$pvalue
+  # out = matrix(c(res$log2FoldChange, res$pvalue), ncol = 2)
   colnames(out) = c("Estimate", "pval")
   return(out)
 }
