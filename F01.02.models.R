@@ -143,8 +143,9 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   cat("\n12. DESeq2\n")
   if(!De2.skip){
 
-    tmp <- DS2(data[, index.filtered.meta])
+    tmp <- try({DS2(data[, index.filtered.meta])})
     
+    if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
     result[[1]]["DESeq2", index.filtered] <- tmp[,1] #coef.
     result[[2]]["DESeq2", index.filtered] <- tmp[,2] #pval.
     
@@ -540,12 +541,13 @@ DS2 <- function (data.l) {
     if (sum(keepForSizeComp) < 30) keepForSizeComp <- rowSums(counts(dds) >= 3) >= 5
     scr <- try({computeSumFactors(dds[keepForSizeComp, ])})
     if (class(scr)[1] == "try-error")
-      return(matrix(NA, ncol = 2, nrow = dim(dds)[1], dimnames = list(NULL, c("Estimate", "pval"))))
+      return(matrix(NA, ncol = 2, nrow = length(keepForTests), dimnames = list(NULL, c("Estimate", "pval"))))
   }
   sizeFactors(dds) <- sizeFactors(scr)
   
-  dds <- DESeq(dds, test="LRT", reduced=~1,
-               minmu=1e-6, minRep=Inf)
+  dds <- try({DESeq(dds, test="LRT", reduced=~1, minmu=1e-6, minRep=Inf)})
+  if (class(dds)[1] == "try-error")
+    return(matrix(NA, ncol = 2, nrow = length(keepForTests), dimnames = list(NULL, c("Estimate", "pval"))))
   # plotDispEsts(dds)
   
   keepForDispTrend <- rowSums(counts(dds) >= 3) >= 10
