@@ -185,7 +185,8 @@ for (i in 1:10) {
           result.MAST$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
           
           print("DESeq2")
-          tmp.DS2 <- DS2(data[, index.filtered.meta])
+          tmp.DS2 <- try({DS2(data[, index.filtered.meta])})
+          if (class(tmp.DS2)[1] == "try-error") tmp.DS2 = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
           result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
           result.DS2$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
           result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
