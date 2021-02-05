@@ -555,7 +555,7 @@ DS2 <- function (data.l) {
   if (sum(keepForDispTrend) < 30) keepForDispTrend <- rowSums(counts(dds) >= 3) >= 5
   if (sum(keepForDispTrend) < 30) {
     warning("Dispersion is not stably estimated. NA's are returned.")
-    return(matrix(NA, ncol = 2, nrow = dim(dds)[1], dimnames = list(NULL, c("Estimate", "pval"))))
+    return(matrix(NA, ncol = 2, nrow = length(keepForTests), dimnames = list(NULL, c("Estimate", "pval"))))
   }
   dds2 <- estimateDispersionsFit(dds[keepForDispTrend,], fitType = "local")
   # parametric models still fail. Use the local estimation.
