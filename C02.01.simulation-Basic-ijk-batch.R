@@ -14,6 +14,7 @@ perturb = as.numeric(args[5]) # 5, 3, 0
 n = as.numeric(args[6])  # 80 800  sample size
 save.stat.only = as.logical(args[7]) # 1, 0
 n.gene = as.numeric(args[8]) # 1000 
+nm = sprintf("tmp_%s_%s%s_%s_pert%1.1f_n%s_s%s.txt", i, j, k, model, perturb, n, 1) # bookkeeping
 
 if (is.na(save.stat.only)) save.stat.only = TRUE
 if (is.na(n.gene)) n.gene = 1000
@@ -45,6 +46,12 @@ for (i in 1:10) {
     
     cat("i: ", i,", j: ",j,", k: ",k,", model: ", model, ", perturb: ", perturb, "\n")
     cat("n = ", n,", stat.stat.only : ", save.stat.only,", n.gene: ",n.gene, "\n")
+    
+    # bookkeeping
+    if (file.exists(nm)) file.remove(nm)
+    nm = gsub("tmp_[0-9]*", sprintf("tmp_%s", i), nm)
+    nm = gsub("_s[0-9]*", "_s1", nm)
+    write.table(" ", nm)
     
     
     ## To save the result
@@ -158,6 +165,12 @@ for (i in 1:10) {
         }
         message("More MAST, MGS, DESeq2 replicates (s):\n")
         for (s in 2:M) {
+          # bookkeeping
+          if (file.exists(nm)) file.remove(nm)
+          nm = gsub("_s[0-9]*", sprintf("_s%s", s), nm)
+          write.table(" ", nm)
+          
+          
           cat("MAST replicate s = ", s, "\n")
           set.seed(s*10^5 + i*10^3 + j*10^2 + k)
           data = do.call(r.sim, dat.args)
@@ -166,6 +179,7 @@ for (i in 1:10) {
           # filtering
           nonzero.prop.2 <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
           filtr.2 = nonzero.prop.2 >= prev.filter
+          if (sum(filter.2) < 10) next
           data[, which(!filtr.2)] = NA
           
           cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
@@ -198,6 +212,7 @@ for (i in 1:10) {
           result.MGS$coef[[s]][index.filtered] <- tmp.MGS[, "Estimate"] #coef.
           result.MGS$pval[[s]][index.filtered] <- tmp.MGS[, "pval"] #pval.
           result.MGS$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+          gc()
         }
         
         # plug in back the MAST result in the main object.
@@ -319,6 +334,10 @@ for (i in 1:10) {
     saveRDS(list(stat = stat.comb, setting = setting.summary), save_file.stat)
     if (!save.stat.only) saveRDS(result, save_file.raw)
     
+    # bookkeeping
+    if (file.exists(nm)) file.remove(nm)
+    nm = gsub("tmp_", "tmp_done_", nm)
+    write.table(" ", nm)
     
     tt(2)
 }
