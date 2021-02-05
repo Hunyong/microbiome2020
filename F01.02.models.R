@@ -46,6 +46,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     {which(!.)} %>% as.numeric
   index.meta = grepl("^y\\.", names(data)) %>% "!"(.) %>% which
   index.filtered.meta = c(index.filtered, index.meta)
+  if (length(index.filtered) < 10) return(result)
   
   data = data.frame(data[,1:length(genes)], phenotype = data$phenotype, batch = data$batch)
   ## print(head(data))    (No longer need to check data)

@@ -14,7 +14,7 @@ perturb = as.numeric(args[5]) # 5, 3, 0
 n = as.numeric(args[6])  # 80 800  sample size
 save.stat.only = as.logical(args[7]) # 1, 0
 n.gene = as.numeric(args[8]) # 1000 
-nm1 = sprintf("tmp_%s_%s%s_%s_pert%1.1f_n%s_s%s.txt", 1, j, k, model, perturb, n, 1) # bookkeeping
+nm1 = sprintf("tmp_%s_%s_%s_%s_pert%1.1f_n%s_s%s.txt", 1, j, k, model, perturb, n, 1) # bookkeeping
 
 if (is.na(save.stat.only)) save.stat.only = TRUE
 if (is.na(n.gene)) n.gene = 1000
