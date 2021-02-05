@@ -98,7 +98,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   if(!MAST.skip){
     # tmp <- MAST(data)  #MAST
     # tmp <- data.frame(coef = rep(NA,3), pval = NA)    #MAST maybe not applicable
-    tmp <- MAST(data[, index.filtered.meta])
+    tmp <- try({MAST(data[, index.filtered.meta])})
+    if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
     result[[1]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- tmp[[1]][1:3,] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
     result[[2]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- tmp[[2]][1:3,] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
     result[[2]]["MAST.min", index.filtered] <- pmin(tmp[[2]][1,], tmp[[2]][2,], na.rm = TRUE)
@@ -170,7 +171,9 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   #14. metagenomeSeq
   cat("14 metagenomeSeq\n")
   if(!MGS.skip){
-    tmp <- mgs(data[, index.filtered.meta])
+    tmp <- try({mgs(data[, index.filtered.meta])})
+    if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+    
     result[[1]]["MGS", index.filtered] <- tmp[, "Estimate"] #coef.
     result[[2]]["MGS", index.filtered] <- tmp[, "pval"]     #pval.
   } else {cat("MGS is skipped\n")}

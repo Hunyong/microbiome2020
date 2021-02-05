@@ -179,7 +179,8 @@ for (i in 1:10) {
           
           # MAST
           print("MAST")
-          tmp.MAST <- MAST(data[, index.filtered.meta])
+          tmp.MAST <- try({MAST(data[, index.filtered.meta])})
+          if (class(tmp.MAST)[1] == "try-error") tmp.MAST = matrix(NA, ncol = 2)
           result.MAST$coef[[s]][, index.filtered] <- tmp.MAST[[1]][1:3, ] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
           result.MAST$pval[[s]][, index.filtered] <- tmp.MAST[[2]][1:3, ] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
           result.MAST$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
@@ -192,7 +193,8 @@ for (i in 1:10) {
           result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
           
           print("MGS")
-          tmp.MGS <- mgs(data[, index.filtered.meta])
+          tmp.MGS <- try({mgs(data[, index.filtered.meta])})
+          if (class(tmp.MGS)[1] == "try-error") tmp.MGS = matrix(NA, ncol = 2)
           result.MGS$coef[[s]][index.filtered] <- tmp.MGS[, "Estimate"] #coef.
           result.MGS$pval[[s]][index.filtered] <- tmp.MGS[, "pval"] #pval.
           result.MGS$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
