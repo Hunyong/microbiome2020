@@ -555,7 +555,7 @@ DS2 <- function (data.l) {
   
   keepForDispTrend <- rowSums(counts(dds) >= 3) >= 10
   # If the filtering results in too few samples, relax the threshold. If the alternative does not work, return NA.
-  if (sum(keepForDispTrend) < 30) keepForDispTrend <- rowSums(counts(dds) >= 3) >= 5
+  # if (sum(keepForDispTrend) < 30) keepForDispTrend <- rowSums(counts(dds) >= 3) >= 5 # However, this lower threshold causes a fatal error when DESe2 is implemented.
   if (sum(keepForDispTrend) < 30) {
     warning("Dispersion is not stably estimated. NA's are returned.")
     return(matrix(NA, ncol = 2, nrow = length(keepForTests), dimnames = list(NULL, c("Estimate", "pval"))))
