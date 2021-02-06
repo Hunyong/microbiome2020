@@ -185,7 +185,7 @@ for (i in 1:10) {
           # filtering
           nonzero.prop.2 <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
           filtr.2 = nonzero.prop.2 >= prev.filter
-          if (sum(filter.2) < 10) next
+          if (sum(filtr.2) < 10) next
           data[, which(!filtr.2)] = NA
           
           cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
