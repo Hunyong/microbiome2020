@@ -71,9 +71,9 @@ for (i in 1:10) {
     if (file.exists(save_file.stat)) {
       # bookkeeping
       if (file.exists(nm)) file.remove(nm)
-      nm = gsub("tmp_", "tmp_done_", nm)
-      nm = gsub("_s[0-9]*", "", nm)
-      write.table(" ", nm)
+      # nm = gsub("tmp_", "tmp_done_", nm)
+      # nm = gsub("_s[0-9]*", "", nm)
+      # write.table(" ", nm)
       
       next  # next i
       # stop("done already.")
@@ -351,9 +351,9 @@ for (i in 1:10) {
     
     # bookkeeping
     if (file.exists(nm)) file.remove(nm)
-    nm = gsub("tmp_", "tmp_done_", nm)
-    nm = gsub("_s[0-9]*", "", nm)
-    write.table(" ", nm)
+    # nm = gsub("tmp_", "tmp_done_", nm)
+    # nm = gsub("_s[0-9]*", "", nm)
+    # write.table(" ", nm)
     
     tt(2)
 }
