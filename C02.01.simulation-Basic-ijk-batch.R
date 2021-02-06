@@ -52,7 +52,14 @@ for (i in 1:10) {
     nm = gsub("tmp_[0-9]*", sprintf("tmp_%s", i), nm)
     nm = gsub("_s[0-9]*", "_s1", nm)
     write.table(" ", nm)
-    
+    if (file.exists("tmp_bookkeeping.csv")) {
+      book = read.csv("tmp_bookkeeping.csv") 
+      book.s = 
+        book %>% dplyr::filter(i == .GlobalEnv$i, j == .GlobalEnv$j, k == .GlobalEnv$k, 
+                               model == .GlobalEnv$model, pert == .GlobalEnv$pert, n == .GlobalEnv$n)
+    } else {
+      next
+    }
     
     ## To save the result
     # Check and create the folder
@@ -206,11 +213,13 @@ for (i in 1:10) {
           result.MAST$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
           
           print("DESeq2")
-          tmp.DS2 <- try({DS2(data[, index.filtered.meta])})
-          if (class(tmp.DS2)[1] == "try-error") tmp.DS2 = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
-          result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
-          result.DS2$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
-          result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+          if (!s %in% book.s$s) {
+            tmp.DS2 <- try({DS2(data[, index.filtered.meta])})
+            if (class(tmp.DS2)[1] == "try-error") tmp.DS2 = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
+            result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
+            result.DS2$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
+            result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+          } # otherwise it gives a fatal error, so this replicate is skipped.
           
           print("MGS")
           tmp.MGS <- try({mgs(data[, index.filtered.meta])})
