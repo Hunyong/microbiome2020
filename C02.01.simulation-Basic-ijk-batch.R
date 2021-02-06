@@ -52,6 +52,7 @@ for (i in 1:10) {
     nm = gsub("tmp_[0-9]*", sprintf("tmp_%s", i), nm)
     nm = gsub("_s[0-9]*", "_s1", nm)
     write.table(" ", nm)
+    ds.fatal = FALSE # by defalut FALSE
     if (file.exists("tmp_bookkeeping.csv")) {
       book = read.csv("tmp_bookkeeping.csv") 
       book.s = 
@@ -219,7 +220,9 @@ for (i in 1:10) {
             result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
             result.DS2$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
             result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
-          } # otherwise it gives a fatal error, so this replicate is skipped.
+          } else {
+            ds.fatal = TRUE# otherwise it gives a fatal error, so this replicate is skipped.
+          }
           
           print("MGS")
           tmp.MGS <- try({mgs(data[, index.filtered.meta])})
@@ -350,7 +353,7 @@ for (i in 1:10) {
     if (!save.stat.only) saveRDS(result, save_file.raw)
     
     # bookkeeping
-    if (file.exists(nm)) file.remove(nm)
+    if (file.exists(nm) & !ds.fatal) file.remove(nm)
     # nm = gsub("tmp_", "tmp_done_", nm)
     # nm = gsub("_s[0-9]*", "", nm)
     # write.table(" ", nm)
