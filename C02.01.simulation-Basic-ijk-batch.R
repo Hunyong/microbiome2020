@@ -58,9 +58,9 @@ for (i in 1:10) {
       book = read.csv("tmp_bookkeeping.csv") 
       book.s = 
         book %>% dplyr::filter(i == .GlobalEnv$i, j == .GlobalEnv$j, k == .GlobalEnv$k, 
-                               model == .GlobalEnv$model, pert == .GlobalEnv$pert, n == .GlobalEnv$n)
+                               model == .GlobalEnv$model, pert == .GlobalEnv$perturb, n == .GlobalEnv$n)
     } else {
-      next
+      book.s = data.frame(i == 0, j == 0, k == 0, model == "", pert == 0, n == 0, s = 0)
     }
     
     ## To save the result
