@@ -48,6 +48,7 @@ for (i in 1:10) {
     cat("n = ", n,", stat.stat.only : ", save.stat.only,", n.gene: ",n.gene, "\n")
     
     # bookkeeping
+    library(dplyr)
     nm = nm1
     nm = gsub("tmp_[0-9]*", sprintf("tmp_%s", i), nm)
     nm = gsub("_s[0-9]*", "_s1", nm)
