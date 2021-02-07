@@ -181,7 +181,7 @@ for (i in 1:10) {
         message("More MAST, MGS, DESeq2 replicates (s):\n")
         for (s in 2:M) {
           # bookkeeping
-          if (file.exists(nm)) file.remove(nm)
+          if (file.exists(nm) & !ds.fatal) file.remove(nm)
           nm = gsub("_s[0-9]*", sprintf("_s%s", s), nm)
           write.table(" ", nm)
           
