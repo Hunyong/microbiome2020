@@ -19,7 +19,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
                                 KW.skip = FALSE, Wg.skip = FALSE,
                                 De2.skip = FALSE, WRS.skip = FALSE,
                                 MGS.skip = FALSE,
-                                skip.small.n = FALSE) {
+                                skip.small.n = FALSE,
+                                DS2.version = c("vanilla", "zinb")) {
   # description
   # data should have y and sampleSum    all n.sample x (n.gene(gene) + 3 (phenotype + batch + sampleSum))
   #          outcome (phenotype), nuisance (batch)
@@ -55,6 +56,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   } else {
     data$sampleSum <- data2$sampleSum
   }
+  
+  DS2.version = match.arg(DS2.version)
   
   
   cat("1-3. Logistic Beta\n")
@@ -144,7 +147,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   #12. De2
   cat("\n12. DESeq2\n")
   if(!De2.skip){
-
+    cat("DESeq2 type: ", DS2.version, "\n")
+    DS2 = switch(DS2.version, vanilla = vDS2.vanilla, zinb = DS2.zinb)
     tmp <- try({DS2(data[, index.filtered.meta])})
     
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
@@ -503,8 +507,8 @@ if (FALSE) {# example
   glm(y.1~phenotype, data=data) %>% summary
 }
 
-### 12. DESeq2
-DS2 <- function (data.l) {
+### 12. DESeq2 ZINB-WAVE extension
+DS2.zinb <- function (data.l) {
 # tmp.dat <<- data.l
   ### Much part of this code is from 
   # https://github.com/mikelove/zinbwave-deseq2/blob/master/zinbwave-deseq2.knit.md
@@ -580,7 +584,8 @@ DS2 <- function (data.l) {
   colnames(out) = c("Estimate", "pval")
   return(out)
 }
-DS2.old <- function (data.l) {
+### 12. DESeq2 plain version.
+DS2.vanilla <- function (data.l) {
   # tmp.dat <<- data.l
   require(DESeq2)
   dds <- DESeqDataSetFromMatrix(countData = round(t(data.l[, grepl("^y", names(data.l))]),0),

@@ -14,6 +14,8 @@ perturb = as.numeric(args[5]) # 5, 3, 0
 n = as.numeric(args[6])  # 80 800  sample size
 save.stat.only = as.logical(args[7]) # 1, 0
 n.gene = as.numeric(args[8]) # 1000 
+DS2.version = "vanilla"
+
 nm1 = sprintf("tmp_%s_%s_%s_%s_pert%1.1f_n%s_s%s.txt", 1, j, k, model, perturb, n, 1) # bookkeeping
 
 if (is.na(save.stat.only)) save.stat.only = TRUE
@@ -134,7 +136,8 @@ for (i in 1:10) {
            param.set = param.set,
            n.sample = n.sample, n.gene=n.gene,
            perturb = perturb,
-           threshold = c(regular = cutoff, sig = sig, prev.filter = prev.filter))
+           threshold = c(regular = cutoff, sig = sig, prev.filter = prev.filter),
+           DESeq.version = DS2.version)
     
     # 2. data
     data = do.call(r.sim, dat.args)
@@ -153,7 +156,8 @@ for (i in 1:10) {
     result <- tester.set.HD.batch(data, n.gene=n.gene, suppressWarnWagner = TRUE, # if not suppressed, the slurm-out file size explodes.
                                   LB.skip = F,LN.skip = F, MAST.skip = F,
                                   KW.skip = F, Wg.skip = F, De2.skip = F, WRS.skip = (j != 1),
-                                  MGS.skip = (j != 1)) # if there are batch effects skip WRS and MGS.
+                                  MGS.skip = (j != 1), # if there are batch effects skip WRS and MGS.
+                                  DS2.version = DS2.version)
     result$nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
     
     ### More MAST, DESeq2, MGS replicates (M = 10 in total)
@@ -216,6 +220,7 @@ for (i in 1:10) {
           
           print("DESeq2")
           if (!s %in% book.s$s) {
+            DS2 = switch(DS2.version, vanilla = vDS2.vanilla, zinb = DS2.zinb)
             tmp.DS2 <- try({DS2(data[, index.filtered.meta])})
             if (class(tmp.DS2)[1] == "try-error") tmp.DS2 = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
             result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
