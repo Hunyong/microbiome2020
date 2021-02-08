@@ -22,7 +22,7 @@ pertplot <- function(model= "ziln", size)
       {
         for(k in k.index)
         {
-          result <- readRDS(paste0("stat-n",size,"-pert",pe,"-ziln-",i,".",j,".",k,".rds"))
+          result <- readRDS(paste0("output/stat-n",size,"-pert",pe,"-ziln-",i,".",j,".",k,".rds"))
           result.stat <- data.frame(result$stat)
           
           tmp <- result.stat%>% mutate ("i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),"effect" = as.character(result$setting$delta[4]),"pert"=pe)%>%dplyr::select("LB.glob","i","j","k","batch_f","effect","pert")
@@ -70,7 +70,7 @@ pertplot <- function(model= "ziln", size)
     facet_grid(cols = vars(perturbation_f), rows = vars(effect_f), labeller = label_parsed) +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> plb
   
-  ggsave(file = "figure/LB_pert_size",size,".png", plb, width = 20, height=12)
+  ggsave(file = paste0("figure/LB_pert_size",size,".png"), plb, width = 20, height=12)
   plb
 }
 
