@@ -2,7 +2,7 @@ library(tidyverse)
 library(latex2exp)
 source("C01.02.simulation.setup.R")
 
-pertplot <- function(model= "ZILN", size)
+pertplot <- function(model= "ziln", size)
 {
   j.index <- c(1,5,3)
   k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
@@ -74,5 +74,5 @@ pertplot <- function(model= "ZILN", size)
   plb
 }
 
-pertplot(80)
-pertplot(400)
+pertplot(model= "ziln", size = 80)
+pertplot(model= "ziln", size = 400)
