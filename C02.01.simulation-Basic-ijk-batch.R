@@ -181,7 +181,7 @@ for (i in 1:10) {
         message("More MAST, MGS, DESeq2 replicates (s):\n")
         for (s in 2:M) {
           # bookkeeping
-          if (file.exists(nm)) file.remove(nm)
+          if (file.exists(nm) & !ds.fatal) file.remove(nm)
           nm = gsub("_s[0-9]*", sprintf("_s%s", s), nm)
           write.table(" ", nm)
           
@@ -221,6 +221,7 @@ for (i in 1:10) {
             result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
             result.DS2$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
             result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+            ds.fatal = FALSE# otherwise it gives a fatal error, so this replicate is skipped.
           } else {
             ds.fatal = TRUE# otherwise it gives a fatal error, so this replicate is skipped.
           }
