@@ -2,7 +2,7 @@ library(tidyverse)
 library(latex2exp)
 source("C01.02.simulation.setup.R")
 
-pertplot <- function(model= "ZILN", size)
+pertplot <- function(model= "ziln", size)
 {
   j.index <- c(1,5,3)
   k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
@@ -22,7 +22,7 @@ pertplot <- function(model= "ZILN", size)
       {
         for(k in k.index)
         {
-          result <- readRDS(paste0("stat-n",size,"-pert",pe,"-ziln-",i,".",j,".",k,".rds"))
+          result <- readRDS(paste0("output/stat-n",size,"-pert",pe,"-ziln-",i,".",j,".",k,".rds"))
           result.stat <- data.frame(result$stat)
           
           tmp <- result.stat%>% mutate ("i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),"effect" = as.character(result$setting$delta[4]),"pert"=pe)%>%dplyr::select("LB.glob","i","j","k","batch_f","effect","pert")
@@ -70,9 +70,9 @@ pertplot <- function(model= "ZILN", size)
     facet_grid(cols = vars(perturbation_f), rows = vars(effect_f), labeller = label_parsed) +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> plb
   
-  ggsave(file = "figure/LB_pert_size",size,".png", plb, width = 20, height=12)
+  ggsave(file = paste0("figure/LB_pert_size",size,".png"), plb, width = 20, height=12)
   plb
 }
 
-pertplot(80)
-pertplot(400)
+pertplot(model= "ziln", size = 80)
+pertplot(model= "ziln", size = 400)

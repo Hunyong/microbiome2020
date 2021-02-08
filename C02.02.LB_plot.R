@@ -18,7 +18,7 @@ LBplot <- function(model,size)
   {
     for(k in k.index)
     {
-      result <- readRDS(paste0("stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
+      result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
       result.stat <- data.frame(result$stat)
       
       tmp <- result.stat%>% mutate ("i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),"effect" = as.character(result$setting$delta[4]))%>%dplyr::select("LB.nonz","LB.zero","LB.glob","LB.min","i","j","k","batch_f","effect")
