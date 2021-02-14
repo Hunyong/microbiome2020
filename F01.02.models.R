@@ -148,7 +148,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   cat("\n12. DESeq2\n")
   if(!De2.skip){
     cat("DESeq2 type: ", DS2.version, "\n")
-    DS2 = switch(DS2.version, vanilla = vDS2.vanilla, zinb = DS2.zinb)
+    DS2 = switch(DS2.version, vanilla = DS2.vanilla, zinb = DS2.zinb)
     tmp <- try({DS2(data[, index.filtered.meta])})
     
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
