@@ -220,7 +220,7 @@ for (i in 1:10) {
           
           print("DESeq2")
           if (!s %in% book.s$s) {
-            DS2 = switch(DS2.version, vanilla = vDS2.vanilla, zinb = DS2.zinb)
+            DS2 = switch(DS2.version, vanilla = DS2.vanilla, zinb = DS2.zinb)
             tmp.DS2 <- try({DS2(data[, index.filtered.meta])})
             if (class(tmp.DS2)[1] == "try-error") tmp.DS2 = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
             result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
