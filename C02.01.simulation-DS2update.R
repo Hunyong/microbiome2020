@@ -78,6 +78,10 @@ if (is.null(perturb) | perturb == 0) {
       if (!dir.exists(update_path)) {message("No output folder detected. Creating one."); dir.create(update_path)}
       update_file.stat = gsub("(output.*)/", "\\1_updated/", save_file.stat)
       
+      if (update_file.stat) {
+        next
+      }
+      
       if (!file.exists(save_file.stat)) {
         cat("No file is present. Skipping!!!")
         saveRDS("", gsub("\\.rds", "_(NOT_DONE).rds", update_file.stat))

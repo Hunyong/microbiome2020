@@ -1,5 +1,5 @@
 # ZINB
-for l in {1..1}; do # ZINB, ZIG, ZILN
+for l in {1..3}; do # ZINB, ZIG, ZILN
   for j in {0..0}; do 
     for k in {1..54}; do 
       sbatch --time=10:00:00 --mem 10000 S9_DS2_update.sh 0 $j $k $l 5 80;
