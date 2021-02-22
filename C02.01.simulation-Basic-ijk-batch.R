@@ -14,9 +14,9 @@ perturb = as.numeric(args[5]) # 5, 3, 0
 n = as.numeric(args[6])  # 80 800  sample size
 save.stat.only = as.logical(args[7]) # 1, 0
 n.gene = as.numeric(args[8]) # 1000 
-DS2.version = "vanilla"
+DS2.version = "zinb"
 
-nm1 = sprintf("tmp_%s_%s_%s_%s_pert%1.1f_n%s_s%s.txt", 1, j, k, model, perturb, n, 1) # bookkeeping
+# nm1 = sprintf("tmp_%s_%s_%s_%s_pert%1.1f_n%s_s%s.txt", 1, j, k, model, perturb, n, 1) # bookkeeping
 
 if (is.na(save.stat.only)) save.stat.only = TRUE
 if (is.na(n.gene)) n.gene = 1000
@@ -50,20 +50,20 @@ for (i in 1:10) {
     cat("n = ", n,", stat.stat.only : ", save.stat.only,", n.gene: ",n.gene, "\n")
     
     # bookkeeping
-    library(dplyr)
-    nm = nm1
-    nm = gsub("tmp_[0-9]*", sprintf("tmp_%s", i), nm)
-    nm = gsub("_s[0-9]*", "_s1", nm)
-    write.table(" ", nm)
-    ds.fatal = FALSE # by defalut FALSE
-    if (file.exists("tmp_bookkeeping.csv")) {
-      book = read.csv("tmp_bookkeeping.csv") 
-      book.s = 
-        book %>% dplyr::filter(i == .GlobalEnv$i, j == .GlobalEnv$j, k == .GlobalEnv$k, 
-                               model == .GlobalEnv$model, pert == .GlobalEnv$perturb, n == .GlobalEnv$n)
-    } else {
-      book.s = data.frame(i = 0, j = 0, k = 0, model = "", pert = 0, n = 0, s = 0)
-    }
+    # library(dplyr)
+    # nm = nm1
+    # nm = gsub("tmp_[0-9]*", sprintf("tmp_%s", i), nm)
+    # nm = gsub("_s[0-9]*", "_s1", nm)
+    # write.table(" ", nm)
+    # ds.fatal = FALSE # by defalut FALSE
+    # if (file.exists("tmp_bookkeeping.csv")) {
+    #   book = read.csv("tmp_bookkeeping.csv") 
+    #   book.s = 
+    #     book %>% dplyr::filter(i == .GlobalEnv$i, j == .GlobalEnv$j, k == .GlobalEnv$k, 
+    #                            model == .GlobalEnv$model, pert == .GlobalEnv$perturb, n == .GlobalEnv$n)
+    # } else {
+    #   book.s = data.frame(i = 0, j = 0, k = 0, model = "", pert = 0, n = 0, s = 0)
+    # }
     
     ## To save the result
     # Check and create the folder
@@ -73,11 +73,8 @@ for (i in 1:10) {
     
     if (!dir.exists(save_path)) {message("No output folder detected. Creating one."); dir.create(save_path)}
     if (file.exists(save_file.stat)) {
-      # bookkeeping
-      if (file.exists(nm)) file.remove(nm)
-      # nm = gsub("tmp_", "tmp_done_", nm)
-      # nm = gsub("_s[0-9]*", "", nm)
-      # write.table(" ", nm)
+      # # bookkeeping
+      # if (file.exists(nm)) file.remove(nm)
       
       next  # next i
       # stop("done already.")
@@ -151,7 +148,7 @@ for (i in 1:10) {
     cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
     cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), ".\n")
     #if (any(class(try(readRDS(paste0("output/R0201sim181201/result.", i, ".", j, ".", k,".rds")))) %in% "try-error")) {
-    
+
     # do the tests on the ramdon ZINB distribution we created
     result <- tester.set.HD.batch(data, n.gene=n.gene, suppressWarnWagner = TRUE, # if not suppressed, the slurm-out file size explodes.
                                   LB.skip = F,LN.skip = F, MAST.skip = F,
@@ -159,7 +156,7 @@ for (i in 1:10) {
                                   MGS.skip = (j != 1), # if there are batch effects skip WRS and MGS.
                                   DS2.version = DS2.version)
     result$nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
-    
+  
     ### More MAST, DESeq2, MGS replicates (M = 10 in total)
         result.MAST <- list(coef = list(), pval = list())
         result.MAST$coef[[1]] <- result$coef[c("MAST.nonz", "MAST.zero", "MAST.glob"), ]
@@ -184,13 +181,12 @@ for (i in 1:10) {
         }
         message("More MAST, MGS, DESeq2 replicates (s):\n")
         for (s in 2:M) {
-          # bookkeeping
-          if (file.exists(nm) & !ds.fatal) file.remove(nm)
-          nm = gsub("_s[0-9]*", sprintf("_s%s", s), nm)
-          write.table(" ", nm)
+          # # bookkeeping
+          # if (file.exists(nm) & !ds.fatal) file.remove(nm)
+          # nm = gsub("_s[0-9]*", sprintf("_s%s", s), nm)
+          # write.table(" ", nm)
           
-          
-          cat("MAST replicate s = ", s, "\n")
+          cat("More replicate s = ", s, "\n")
           set.seed(s*10^5 + i*10^3 + j*10^2 + k)
           data = do.call(r.sim, dat.args)
           data %<>% dplyr::filter(sampleSum > 0)
@@ -219,17 +215,17 @@ for (i in 1:10) {
           result.MAST$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
           
           print("DESeq2")
-          if (!s %in% book.s$s) {
+          # if (!s %in% book.s$s) {
             DS2 = switch(DS2.version, vanilla = DS2.vanilla, zinb = DS2.zinb)
             tmp.DS2 <- try({DS2(data[, index.filtered.meta])})
             if (class(tmp.DS2)[1] == "try-error") tmp.DS2 = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
             result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
             result.DS2$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
             result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
-            ds.fatal = FALSE# otherwise it gives a fatal error, so this replicate is skipped.
-          } else {
-            ds.fatal = TRUE# otherwise it gives a fatal error, so this replicate is skipped.
-          }
+          #   ds.fatal = FALSE# otherwise it gives a fatal error, so this replicate is skipped.
+          # } else {
+          #   ds.fatal = TRUE# otherwise it gives a fatal error, so this replicate is skipped.
+          # }
           
           print("MGS")
           tmp.MGS <- try({mgs(data[, index.filtered.meta])})
@@ -359,11 +355,11 @@ for (i in 1:10) {
     saveRDS(list(stat = stat.comb, setting = setting.summary), save_file.stat)
     if (!save.stat.only) saveRDS(result, save_file.raw)
     
-    # bookkeeping
-    if (file.exists(nm) & !ds.fatal) file.remove(nm)
-    # nm = gsub("tmp_", "tmp_done_", nm)
-    # nm = gsub("_s[0-9]*", "", nm)
-    # write.table(" ", nm)
+    # # bookkeeping
+    # if (file.exists(nm) & !ds.fatal) file.remove(nm)
+    # # nm = gsub("tmp_", "tmp_done_", nm)
+    # # nm = gsub("_s[0-9]*", "", nm)
+    # # write.table(" ", nm)
     
     tt(2)
 }
