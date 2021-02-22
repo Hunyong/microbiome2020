@@ -150,11 +150,9 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     cat("DESeq2 type: ", DS2.version, "\n")
     DS2 = switch(DS2.version, vanilla = DS2.vanilla, zinb = DS2.zinb)
     tmp <- try({DS2(data[, index.filtered.meta])})
-    
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
     result[[1]]["DESeq2", index.filtered] <- tmp[,1] #coef.
     result[[2]]["DESeq2", index.filtered] <- tmp[,2] #pval.
-    
   } else {cat("DESeq2 is skipped\n")}
   
   cat("\n13. WRS\n l = ")
@@ -509,7 +507,53 @@ if (FALSE) {# example
 
 ### 12. DESeq2 ZINB-WAVE extension
 DS2.zinb <- function (data.l) {
-# tmp.dat <<- data.l
+  ### Much part of this code is from 
+  # https://github.com/mikelove/zinbwave-deseq2/blob/master/zinbwave-deseq2.knit.md
+  # With lots of fatal errors from scran, this code does not have the scran components.
+  
+  require(DESeq2)
+  require(zinbwave)
+  require(BiocParallel)
+  
+  ### Extra filter for zero counts out too sparse genes
+  col.otu = which(grepl("^y", names(data.l)))
+  col.meta = which(!grepl("^y", names(data.l)))
+  keepForTests <- colSums(round(data.l[, col.otu], 0) >= 1) >= 3  # This will be used again at the end.
+  data.l <- data.l[, c(col.otu[keepForTests], col.meta)]
+  
+  ### Getting the ZINB-wave weights
+  col.otu = which(grepl("^y", names(data.l))) # updated
+  zinb <- DESeqDataSetFromMatrix(countData = round(t(data.l[, col.otu]),0),
+                                colData = data.l[, !grepl("^y", names(data.l))],
+                                design= ~ batch + phenotype)
+  
+  # # we need to reorganize the assays in the SumExp from splatter
+  assay(zinb) <- as.matrix(assay(zinb))
+  X = data.matrix(data.l[, c("phenotype", "batch")])
+  
+  # epsilon setting as recommended by the ZINB-WaVE integration paper
+  zinb <- zinbwave(zinb, X = X, K=0, observationalWeights=TRUE,
+                   BPPARAM=BiocParallel::SerialParam(), epsilon=1e12)
+
+  dds <- DESeqDataSet(zinb, design= ~ batch + phenotype)
+  
+  dds <- DESeq(dds, sfType = "poscounts", test = "LRT", reduced = ~batch, minmu=1e-6, minRep=Inf)
+  
+  res <- results(dds, independentFiltering = FALSE, name = "phenotype_H_vs_D")
+  
+  # insert filtered out NA results
+  out = matrix(NA, nrow = length(keepForTests), ncol = 2)
+  out[keepForTests, 1] = res$log2FoldChange
+  out[keepForTests, 2] = res$pvalue
+  # out = matrix(c(res$log2FoldChange, res$pvalue), ncol = 2)
+  colnames(out) = c("Estimate", "pval")
+  return(out)
+}
+
+### 12. DESeq2 ZINB-WAVE extension (old version with scran)
+DS2.zinb.old <- function (data.l) {
+  tmp.dat <<- data.l
+  saveRDS(tmp.dat, "tmpdat.rds")
   ### Much part of this code is from 
   # https://github.com/mikelove/zinbwave-deseq2/blob/master/zinbwave-deseq2.knit.md
   
@@ -527,8 +571,8 @@ DS2.zinb <- function (data.l) {
   ### Getting the ZINB-wave weights
   col.otu = which(grepl("^y", names(data.l))) # updated
   zinb <- DESeqDataSetFromMatrix(countData = round(t(data.l[, col.otu]),0),
-                                colData = data.l[, !grepl("^y", names(data.l))],
-                                design= ~ batch + phenotype)
+                                 colData = data.l[, !grepl("^y", names(data.l))],
+                                 design= ~ batch + phenotype)
   
   # # we need to reorganize the assays in the SumExp from splatter
   # nms <- c("counts", setdiff(assayNames(zinb), "counts"))
@@ -538,10 +582,10 @@ DS2.zinb <- function (data.l) {
   # epsilon setting as recommended by the ZINB-WaVE integration paper
   zinb <- zinbwave(zinb, X = X, K=0, observationalWeights=TRUE,
                    BPPARAM=BiocParallel::SerialParam(), epsilon=1e12)
-
+  
   dds <- DESeqDataSet(zinb, design= ~ batch + phenotype)
   
-  # Use size factors from the scran package
+  # Use size factors from the scran package - Lots of error
   scr <- try({computeSumFactors(dds)})
   if (class(scr)[1] == "try-error") {
     # negative size factor is calculated. Filtering.
@@ -553,7 +597,7 @@ DS2.zinb <- function (data.l) {
   }
   sizeFactors(dds) <- sizeFactors(scr)
   
-  dds <- try({DESeq(dds, test="LRT", reduced=~1, minmu=1e-6, minRep=Inf)})
+  dds <- try({DESeq(dds, test = "LRT", reduced = ~batch, minmu=1e-6, minRep=Inf)})
   if (class(dds)[1] == "try-error")
     return(matrix(NA, ncol = 2, nrow = length(keepForTests), dimnames = list(NULL, c("Estimate", "pval"))))
   # plotDispEsts(dds)
@@ -571,7 +615,7 @@ DS2.zinb <- function (data.l) {
   
   dispersionFunction(dds) <- dispersionFunction(dds2)
   dds <- estimateDispersionsMAP(dds)
-  dds <- nbinomLRT(dds, reduced=~1, minmu=1e-6)
+  dds <- nbinomLRT(dds, reduced = ~batch, minmu=1e-6)
   
   # filtering is already done.
   res <- results(dds, independentFiltering = FALSE, name = "phenotype_H_vs_D")
@@ -586,7 +630,8 @@ DS2.zinb <- function (data.l) {
 }
 ### 12. DESeq2 plain version.
 DS2.vanilla <- function (data.l) {
-  # tmp.dat <<- data.l
+  tmp.dat <<- data.l
+saveRDS(tmp.dat, "tmp.dat")  
   require(DESeq2)
   dds <- DESeqDataSetFromMatrix(countData = round(t(data.l[, grepl("^y", names(data.l))]),0),
                                 colData = data.l[, !grepl("^y", names(data.l))],
