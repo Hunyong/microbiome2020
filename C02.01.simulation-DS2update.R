@@ -41,7 +41,7 @@ if (is.null(perturb) | perturb == 0) {
   perturb = perturb/10
 }
 
-for (model in c("zinb", "zig", "ziln")) {
+# for (model in c("zinb", "zig", "ziln")) {
   for (j in 1:5) {
     for (i in 1:10) {
       
@@ -248,4 +248,4 @@ for (model in c("zinb", "zig", "ziln")) {
       tt(2)
     }
   }
-}
+# }
