@@ -6,7 +6,7 @@ if (length(args) == 0) {
   args = c(i = 1, j = 1, k = 1, model = 1, perturb = 5, n = 80, save.stat.only = 1, n.gene = 1000)
 }
 cat("The Command Arg is: \n"); print(args)
-# i = as.numeric(args[1])  # 1..10    delta effect
+i = as.numeric(args[1])  # 1..10    delta effect
 j = as.numeric(args[2])  # 1..5     kappa effect
 k = as.numeric(args[3])  # 1..34    baseline scenario
 model = as.numeric(args[4])  # 1..3 generative model
@@ -43,7 +43,8 @@ if (is.null(perturb) | perturb == 0) {
   perturb = perturb/10
 }
 
-for (i in 1:10) {
+if (i == 0) rng = 1:10 else rng = i:10
+for (i in rng) {
   
     
     cat("i: ", i,", j: ",j,", k: ",k,", model: ", model, ", perturb: ", perturb, "\n")
