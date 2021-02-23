@@ -78,7 +78,7 @@ if (is.null(perturb) | perturb == 0) {
       if (!dir.exists(update_path)) {message("No output folder detected. Creating one."); dir.create(update_path)}
       update_file.stat = gsub("(output.*)/", "\\1_updated/", save_file.stat)
       
-      if (update_file.stat) {
+      if (file.exists(update_file.stat)) {
         next
       }
       
