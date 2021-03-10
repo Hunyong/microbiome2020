@@ -32,21 +32,31 @@ expand.grid(m=c(1, 10, 50), t=c(1, 5), p=c(.3, .6, .65, .7, .75, .8, .85, .9, .9
   dplyr::select(no, everything())  -> # reorder columns
   parameterNB
 
+k.core = 
+  c(7, 9, 10, 12, 
+    25, 27, 28, 30,
+    43, 45, 46, 48)
 
 
 # multipliers
 
 # delta = differential expression
 matrix(c(0, 0, 0,
-         1, 0, 0,  0, 1,  0,    0, 0, -1,
-         1, 1, 0,  1, 0, -1,    0, 1, -1,
-         1, 0, 1,  1, -1, 0,    0, -1, -1), byrow = TRUE,
-       nrow = 10, dimnames=list(1:10, c("m", "t", "p"))) %>% 
+         1, 0, 0,       0, 1,  0,    0, 0, -1,
+         1, 1, 0,       1, 0, -1,    0, 1, -1,
+         1, 0, 1,       1, -1, 0,    0, -1, -1,
+         0.5, 0, 0,     2, 0, 0,
+         0, 0, 0.5,     0, 0, 2,
+         0.5, -0.5, 0,  2, -2, 0), byrow = TRUE,
+       nrow = 16, dimnames=list(1:16, c("m", "t", "p"))) %>% 
   data.frame ->
   delta1
 delta1$detail = paste0("Effect_", c("null", "mu(D>H)", "theta(D>H)", "pi(D<H)", 
                                    "mu(D>H).theta(D>H)", "mu(D>H).pi(D<H)", "theta(D>H).pi(D<H)",
-                                   "mu(D>H),pi(D>H)","mu(D>H).theta(D<H)","theta(D<H).pi(D<H)"))
+                                   "mu(D>H),pi(D>H)","mu(D>H).theta(D<H)","theta(D<H).pi(D<H)",
+                                   "mu_small", "mu_large",
+                                   "pi_small", "pi_large",
+                                   "mu.pi_small", "mu.pi_large"))
 
 matrix(c(0, 0, 0,   .5, -.5, -.5,   1, -1, -1,   .5, .5, -.5,   1, 1, -1), byrow = TRUE,
        nrow = 5, dimnames=list(1:5, c("m", "t", "p"))) %>% 

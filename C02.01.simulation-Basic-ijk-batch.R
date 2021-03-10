@@ -1,9 +1,26 @@
 cat("Microbiome - C02.01.simulation-Basic-ijk-batch.R\n")
 
+### 0.1 library
+library(dplyr); library(magrittr); library(ggplot2); library(gridExtra)
+source("F00.00.generic.R")
+source("F01.01.base.R")
+source("F02.01.simulation.R")
+source("F01.02.models-base.R")
+source("F01.02.models.R")
+source("F01.02.summary.gamlss2.R")
+library(MAST)
+library(coin)
+library(metagenomeSeq)
+
+# required parameters from...
+source("C01.02.simulation.setup.R")
+# sessionInfo()
+
+
 args = commandArgs(trailingOnly=TRUE)  # passed from script
 if (length(args) == 0) {
   warning("commandArgs() was not provided. Set as the default value.")
-  args = c(i = 1, j = 1, k = 1, model = 1, perturb = 5, n = 80, save.stat.only = 1, n.gene = 1000)
+  args = c(i = 1, j = 1, k = 1, model = 3, perturb = 5, n = 80, save.stat.only = 1, n.gene = 1000)
 }
 cat("The Command Arg is: \n"); print(args)
 i = as.numeric(args[1])  # 1..10    delta effect
@@ -14,7 +31,6 @@ perturb = as.numeric(args[5]) # 5, 3, 0
 n = as.numeric(args[6])  # 80 800  sample size
 save.stat.only = as.logical(args[7]) # 1, 0
 n.gene = as.numeric(args[8]) # 1000 
-DS2.version = "zinb"
 
 # nm1 = sprintf("tmp_%s_%s_%s_%s_pert%1.1f_n%s_s%s.txt", 1, j, k, model, perturb, n, 1) # bookkeeping
 
@@ -43,7 +59,12 @@ if (is.null(perturb) | perturb == 0) {
   perturb = perturb/10
 }
 
-if (i == 0) rng = 1:10 else rng = i:10
+# We do only up to j = 1, 2, ..., 10 for most of the settings. But we do it fully for some core settings (the ones in the figures of the main body of the paper)
+j.terminal = ifelse(model == "ziln" & j == 1 & k %in% k.core & perturb == 0.5,
+                    dim(delta)[1], 10)  #n = both
+cat("Do k upto ", j.terminal, "\n")
+
+if (i == 0) rng = 1:j.terminal else rng = i:j.terminal
 for (i in rng) {
   
     
@@ -81,22 +102,6 @@ for (i in rng) {
       # stop("done already.")
     }
     
-    ### 0.1 library
-    library(dplyr); library(magrittr); library(ggplot2); library(gridExtra)
-    source("F00.00.generic.R")
-    source("F01.01.base.R")
-    source("F02.01.simulation.R")
-    source("F01.02.models-base.R")
-    source("F01.02.models.R")
-    source("F01.02.summary.gamlss2.R")
-    library(MAST)
-    library(coin)
-    library(metagenomeSeq)
-    
-    # required parameters from...
-    source("C01.02.simulation.setup.R")
-    # sessionInfo()
-    
     #parameter1; delta; kappa
     (parameter = switch(model, 
                         zinb = parameterNB, 
@@ -107,7 +112,7 @@ for (i in rng) {
     
     n.gene; n.sample; 
     print(test.dim <- method.stat %>% length)
-    
+    cdf.cutoff = (0:100)/100
     #
     
     
@@ -134,8 +139,7 @@ for (i in rng) {
            param.set = param.set,
            n.sample = n.sample, n.gene=n.gene,
            perturb = perturb,
-           threshold = c(regular = cutoff, sig = sig, prev.filter = prev.filter),
-           DESeq.version = DS2.version)
+           threshold = c(regular = cutoff, sig = sig, prev.filter = prev.filter))
     
     # 2. data
     data = do.call(r.sim, dat.args)
@@ -148,27 +152,36 @@ for (i in rng) {
     
     cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
     cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), ".\n")
-    #if (any(class(try(readRDS(paste0("output/R0201sim181201/result.", i, ".", j, ".", k,".rds")))) %in% "try-error")) {
-
+    
     # do the tests on the ramdon ZINB distribution we created
     result <- tester.set.HD.batch(data, n.gene=n.gene, suppressWarnWagner = TRUE, # if not suppressed, the slurm-out file size explodes.
                                   LB.skip = F,LN.skip = F, MAST.skip = F,
                                   KW.skip = F, Wg.skip = F, De2.skip = F, WRS.skip = (j != 1),
-                                  MGS.skip = (j != 1), # if there are batch effects skip WRS and MGS.
-                                  DS2.version = DS2.version)
+                                  MGS.skip = (j != 1)) # if there are batch effects skip WRS and MGS.
     result$nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
+    result$pval.cdf <- 
+      result$pval %>% apply(1, function(x) {
+        if (all(is.na(x))) rep(NA, length(cdf.cutoff)) else ecdf(x)(cdf.cutoff)
+      }) %>% t
+    attr(result$pval.cdf, "cutoff") = cdf.cutoff
+    
   
     ### More MAST, DESeq2, MGS replicates (M = 10 in total)
-        result.MAST <- list(coef = list(), pval = list())
+        result.MGS <- result.DS2ZI <- result.DS2 <- result.MAST <- list(coef = list(), pval = list())
+        
         result.MAST$coef[[1]] <- result$coef[c("MAST.nonz", "MAST.zero", "MAST.glob"), ]
         result.MAST$pval[[1]] <- result$pval[c("MAST.nonz", "MAST.zero", "MAST.glob"), ]
         result.MAST$nonzero.prop[[1]] <- result$nonzero.prop
-        result.DS2 <- list(coef = list(), pval = list())
-        result.DS2$coef[[1]] <- result$coef["DESeq2", ]
-        result.DS2$pval[[1]] <- result$pval["DESeq2", ]
+        
+        result.DS2$coef[[1]] <- result$coef["DS2", ]
+        result.DS2$pval[[1]] <- result$pval["DS2", ]
         result.DS2$nonzero.prop[[1]] <- result$nonzero.prop
         
-        result.MGS <- list(coef = list(), pval = list())
+        result.DS2ZI$coef[[1]] <- result$coef["DS2ZI", ]
+        result.DS2ZI$pval[[1]] <- result$pval["DS2ZI", ]
+        result.DS2ZI$nonzero.prop[[1]] <- result$nonzero.prop
+        
+        
         result.MGS$coef[[1]] <- result$coef["MGS", ]
         result.MGS$pval[[1]] <- result$pval["MGS", ]
         result.MGS$nonzero.prop[[1]] <- result$nonzero.prop
@@ -178,7 +191,8 @@ for (i in rng) {
           result.MAST$coef[[s]] <- 
             result.MAST$pval[[s]] <- 
             matrix(NA, 3, n.gene, dimnames = list(c("MAST.nonz", "MAST.zero", "MAST.glob"), NULL))
-          result.DS2$coef[[s]] <- result.DS2$pval[[s]] <- result.MGS$coef[[s]] <- result.MGS$pval[[s]] <- rep(NA, n.gene)
+          result.DS2$coef[[s]] <- result.DS2$pval[[s]] <- result.DS2ZI$coef[[s]] <- 
+            result.DS2ZI$pval[[s]] <- result.MGS$coef[[s]] <- result.MGS$pval[[s]] <- rep(NA, n.gene)
         }
         message("More MAST, MGS, DESeq2 replicates (s):\n")
         for (s in 2:M) {
@@ -215,14 +229,23 @@ for (i in rng) {
           result.MAST$pval[[s]][, index.filtered] <- tmp.MAST[[2]][1:3, ] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
           result.MAST$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
           
-          print("DESeq2")
+          print("DESeq2 -- vanilla")
           # if (!s %in% book.s$s) {
-            DS2 = switch(DS2.version, vanilla = DS2.vanilla, zinb = DS2.zinb)
-            tmp.DS2 <- try({DS2(data[, index.filtered.meta])})
-            if (class(tmp.DS2)[1] == "try-error") tmp.DS2 = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
-            result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
-            result.DS2$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
-            result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+          # DS2 = switch(DS2.version, vanilla = DS2.vanilla, zinb = DS2.zinb)
+          DS2 = DS2.vanilla
+          tmp.DS2 <- try({DS2(data[, index.filtered.meta])})
+          if (class(tmp.DS2)[1] == "try-error") tmp.DS2 = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
+          result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
+          result.DS2$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
+          result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+          
+          print("DESeq2 -- zinbwave")
+          DS2 = DS2.zinb
+          tmp.DS2 <- try({DS2(data[, index.filtered.meta])})
+          if (class(tmp.DS2)[1] == "try-error") tmp.DS2 = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
+          result.DS2ZI$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
+          result.DS2ZI$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
+          result.DS2ZI$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
           #   ds.fatal = FALSE# otherwise it gives a fatal error, so this replicate is skipped.
           # } else {
           #   ds.fatal = TRUE# otherwise it gives a fatal error, so this replicate is skipped.
@@ -238,9 +261,10 @@ for (i in rng) {
         }
         
         # plug in back the MAST result in the main object.
-        result$MAST <- result.MAST
-        result$DS2 <- result.DS2
-        result$MGS <- result.MGS
+        result$MAST  <- result.MAST
+        result$DS2   <- result.DS2
+        result$DS2ZI <- result.DS2ZI
+        result$MGS   <- result.MGS
         
         
         #### statistics
@@ -268,8 +292,16 @@ for (i in rng) {
               s[3,na.index] = s[1,na.index]
               s
             })
-    
         
+          result$pval.cdf[c("MAST.nonz", "MAST.zero", "MAST.glob"), ] <- 
+            result$MAST$pval %>% Reduce(cbind, .) %>% apply(1, function(x) {
+              if (all(is.na(x))) rep(NA, length(cdf.cutoff)) else ecdf(x)(cdf.cutoff)
+            }) %>% t
+          
+          result$pval.cdf["DS2", ] <- result$DS2$pval %>% Reduce(c, .) %>% {ecdf(.)(cdf.cutoff)}
+          result$pval.cdf["DS2ZI", ] <- result$DS2ZI$pval %>% Reduce(c, .) %>% {ecdf(.)(cdf.cutoff)}
+          result$pval.cdf["MGS", ] <- result$MGS$pval %>% Reduce(c, .) %>% {ecdf(.)(cdf.cutoff)}
+          
           
     # 3. Statistics
     # 3.1 statistics for all method (including first replicate of MAST, which is redundant)
@@ -334,17 +366,17 @@ for (i in rng) {
     gc()
     
     
-    stat.power["DESeq2"] <-
+    stat.power["DS2"] <-
       result$DS2$pval %>% 
       sapply( function(x) {ifelse(mean(is.na(x)) >= cutoff, NA, mean(x<=sig, na.rm=TRUE))}) %>%
       mean(na.rm = TRUE)  # vector of three
     
-    stat.irregular["DESeq2"] <- #stat based on NA p-val = 1.
+    stat.irregular["DS2"] <- #stat based on NA p-val = 1.
       result$DS2$pval %>% 
       sapply(function(x)  {mean(ifelse(is.na(x), 1, x)<=sig, na.rm=TRUE)}) %>%
       mean(na.rm = TRUE)
     
-    stat.na.prop["DESeq2"] <-
+    stat.na.prop["DS2"] <-
       result$DS2$pval %>% 
       sapply( function(x)  {mean(is.na(x))}) %>%
       mean(na.rm = TRUE)
@@ -353,7 +385,7 @@ for (i in rng) {
 # Save the result
     stat.comb <- rbind(stat.power, stat.irregular, stat.na.prop)
     
-    saveRDS(list(stat = stat.comb, setting = setting.summary), save_file.stat)
+    saveRDS(list(stat = stat.comb, cdf = result$pval.cdf, setting = setting.summary), save_file.stat)
     if (!save.stat.only) saveRDS(result, save_file.raw)
     
     # # bookkeeping

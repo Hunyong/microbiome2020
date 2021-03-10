@@ -2,8 +2,8 @@
 # install.packages("BiocManager")
 #BiocManager::install("DESeq2")
 library(BiocManager)
-n.test = 18 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-            #"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DESeq2", "WRS", "MGS", "(Reserved)"
+n.test = 19 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
+            #"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI, "WRS", "MGS", "(Reserved)"
 # if(!require(betareg)){
 #   install.packages("betareg")
 # }
@@ -19,8 +19,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
                                 KW.skip = FALSE, Wg.skip = FALSE,
                                 De2.skip = FALSE, WRS.skip = FALSE,
                                 MGS.skip = FALSE,
-                                skip.small.n = FALSE,
-                                DS2.version = c("vanilla", "zinb")) {
+                                skip.small.n = FALSE) {
+                                # DS2.version = c("vanilla", "zinb")
   # description
   # data should have y and sampleSum    all n.sample x (n.gene(gene) + 3 (phenotype + batch + sampleSum))
   #          outcome (phenotype), nuisance (batch)
@@ -31,7 +31,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   
   # 0.0 skeleton #empty matrix
   test.names <- c("LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DESeq2", "WRS", "MGS", "(Reserved)")
+                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI", "WRS", "MGS", "(Reserved)")
   mat.tmp <- matrix(NA, n.test, n.gene, dimnames = list(test.names, NULL)) # n.test=15, n.gene=1000
   result <- list(coef = mat.tmp, pval = mat.tmp)
   if (skeleton) {return(result)}
@@ -56,8 +56,6 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   } else {
     data$sampleSum <- data2$sampleSum
   }
-  
-  DS2.version = match.arg(DS2.version)
   
   
   cat("1-3. Logistic Beta\n")
@@ -145,17 +143,26 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   } else {cat("Wg is skipped\n")}
   
   #12. De2
-  cat("\n12. DESeq2\n")
+  cat("\n12. DESeq2 vanilla\n")
   if(!De2.skip){
-    cat("DESeq2 type: ", DS2.version, "\n")
-    DS2 = switch(DS2.version, vanilla = DS2.vanilla, zinb = DS2.zinb)
+    DS2 = DS2.vanilla
     tmp <- try({DS2(data[, index.filtered.meta])})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
-    result[[1]]["DESeq2", index.filtered] <- tmp[,1] #coef.
-    result[[2]]["DESeq2", index.filtered] <- tmp[,2] #pval.
-  } else {cat("DESeq2 is skipped\n")}
+    result[[1]]["DS2", index.filtered] <- tmp[,1] #coef.
+    result[[2]]["DS2", index.filtered] <- tmp[,2] #pval.
+  } else {cat("DS2-vanilla is skipped\n")}
   
-  cat("\n13. WRS\n l = ")
+  #12. De2 + ZINBwave
+  cat("\n13. DS2 zinbwave\n")
+  if(!De2.skip){
+    DS2 = DS2.zinb
+    tmp <- try({DS2(data[, index.filtered.meta])})
+    if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+    result[[1]]["DS2ZI", index.filtered] <- tmp[,1] #coef.
+    result[[2]]["DS2ZI", index.filtered] <- tmp[,2] #pval.
+  } else {cat("DS2-zinbwave is skipped\n")}
+  
+  cat("\n14. WRS\n l = ")
   if (!WRS.skip){
     for (l in genes) {
       # cat (l," ")
@@ -172,7 +179,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   } else {cat("WRS is skipped\n")}
   
   #14. metagenomeSeq
-  cat("14 metagenomeSeq\n")
+  cat("15 metagenomeSeq\n")
   if(!MGS.skip){
     tmp <- try({mgs(data[, index.filtered.meta])})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
@@ -182,10 +189,10 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   } else {cat("MGS is skipped\n")}
   
   #15. (reserved)
-  cat("15. Reserved\n")
+  cat("16. Reserved\n")
   tmp <- data.frame(coef = NA, pval = NA)    #reserved for possible addition
-  result[[1]][14,1] <- tmp[1,1]
-  result[[2]][14,1] <- tmp[1,2]
+  result[[1]][15,1] <- tmp[1,1]
+  result[[2]][15,1] <- tmp[1,2]
   
   return(result)
 }
@@ -505,7 +512,7 @@ if (FALSE) {# example
   glm(y.1~phenotype, data=data) %>% summary
 }
 
-### 12. DESeq2 ZINB-WAVE extension
+### 12. DS2 ZINB-WAVE extension
 DS2.zinb <- function (data.l) {
   ### Much part of this code is from 
   # https://github.com/mikelove/zinbwave-deseq2/blob/master/zinbwave-deseq2.knit.md
