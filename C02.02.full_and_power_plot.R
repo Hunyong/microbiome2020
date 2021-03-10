@@ -95,20 +95,20 @@ fullplot <- function(size,model)
 
 #width = 32, height = 16
 pn1 <- fullplot(80,model="ziln")
-ggsave(file="figure/ziln_full_80.png",pn1,width = 20,height = 16)
+ggsave(file="figure/ziln_full_size80.png",pn1,width = 20,height = 16)
 pn2 <- fullplot(400,model="ziln")
-ggsave(file="figure/ziln_full_400.png",pn2,width = 20,height = 16)
+ggsave(file="figure/ziln_full_size400.png",pn2,width = 20,height = 16)
 
 
 p1 <- fullplot(80,model="zinb")
-ggsave(file="figure/zinb_full_80.png",p1,width = 20,height = 16)
+ggsave(file="figure/zinb_full_size80.png",p1,width = 20,height = 16)
 p2 <- fullplot(400,model="zinb")
-ggsave(file="figure/zinb_full_400.png",p2,width = 20,height = 16)
+ggsave(file="figure/zinb_full_size400.png",p2,width = 20,height = 16)
 
 pp1 <- fullplot(80,model="zig")
-ggsave(file="figure/zig_full_80.png",pp1,width = 20,height = 16)
+ggsave(file="figure/zig_full_size80.png",pp1,width = 20,height = 16)
 pp2 <- fullplot(400,model="zig")
-ggsave(file="figure/zig_full_400.png",pp2,width = 20,height = 16)
+ggsave(file="figure/zig_full_size400.png",pp2,width = 20,height = 16)
 
 
 ####power plot####
