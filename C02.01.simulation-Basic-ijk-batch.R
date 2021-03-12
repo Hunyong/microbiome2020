@@ -61,7 +61,7 @@ if (is.null(perturb) | perturb == 0) {
 
 # We do only up to j = 1, 2, ..., 10 for most of the settings. But we do it fully for some core settings (the ones in the figures of the main body of the paper)
 j.terminal = ifelse(model == "ziln" & j == 1 & k %in% k.core & perturb == 0.5,
-                    dim(delta)[1], 10)  #n = both
+                    dim(delta1)[1], 10)  #n = both
 cat("Do k upto ", j.terminal, "\n")
 
 if (i == 0) rng = 1:j.terminal else rng = i:j.terminal

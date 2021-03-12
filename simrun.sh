@@ -13,7 +13,7 @@ for l in 3; do # ZILN
   done; 
 done;
 
-# extra
+# extra after the core is done
 for l in {1..3}; do # ZINB, ZIG, ZILN
   for j in {1..5}; do 
     for k in {1..54}; do 
