@@ -492,8 +492,9 @@ Wagner <- function (data, zeroModel = c("logistic", "t.test", "lm"),
   # put together
   # print(Z)
   # print(W)
-  chi2 = c(Z^2 + ifelse(is.na(W), 0, W)^2)
-  chi2 = matrix(c(chi2, 1-pchisq(chi2, df=2)),1,2)
+  chi2 = c(Z[1]^2 + ifelse(is.na(W[1]), 0, W[1])^2)
+  chi2 = matrix(c(Estimate = chi2, pval = 1-pchisq(chi2, df = 2 - is.na(Z[1]) - is.na(W[1]))), 
+                1, 2)
   
   out = rbind(W, Z, chi2) # nonzero, zero, global
   rownames(out) = c("Wg.nonz", "Wg.zero", "Wg.glob")

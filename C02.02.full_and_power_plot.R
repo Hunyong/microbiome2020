@@ -1,5 +1,6 @@
 library(tidyverse)
 library(latex2exp)
+library(ggh4x) # for nested facetting
 source("C01.02.simulation.setup.R")
 
 fullplot <- function(size,model)
@@ -20,10 +21,11 @@ fullplot <- function(size,model)
     
     for(j in 1:5)
     {
-      cat("i= ",i,"j= ",j, "\n")
+      cat("\ni = ",i,"j = ",j, "k = ")
       
       for(k in 1:k.index)
       {
+        cat(k , " ")
         result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
         result.stat <- data.frame(result$stat)
         
@@ -32,17 +34,17 @@ fullplot <- function(size,model)
           mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
                   "i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),
                   "effect" = as.character(result$setting$delta[4])) %>%
-          dplyr::select(LB, LN, MAST, KW, `KW-II`, DESeq2, MGS, i, j, k, batch_f, effect)
+          dplyr::select(LB, LN, MAST, KW, `KW-II`, DS2, `DS2ZI`, MGS, i, j, k, batch_f, effect)
         
         res <- rbind(res,tmp[1,])
       }
     }
   }
-  res <- res %>% gather(key = "method", value = "p.value",`LB`,`LN`,`MAST`,`KW`,`KW-II`,`DESeq2`, `MGS`)
+  res <- res %>% gather(key = "method", value = "p.value",`LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
   
   res$method_f = factor(res$method,
-                             levels = c("LN", "LB", "MAST", "KW", "KW-II", "DESeq2", "MGS"),
-                             labels = c("LN", "LB", "MAST", "KW", "KW-II", "DESeq2", "MGS"))
+                             levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"),
+                             labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"))
   res$effect_f = factor(res$effect,
                              levels = c("Effect_null", "Effect_mu(D>H)", 
                                         "Effect_theta(D>H)", "Effect_pi(D<H)",
@@ -87,7 +89,7 @@ fullplot <- function(size,model)
                                "K5 (1, -1, -1)" = "tomato1")) +
     xlab(expression("baseline (" * mu ~ ", " * theta * ", " * pi * ")")) +
     ylab("rejection rate") +
-    facet_grid(cols = vars(method_f), rows = vars(effect_f), labeller = label_parsed) +
+    facet_grid(rows = vars(method_f), cols = vars(effect_f), labeller = label_parsed) +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> p
   
   p
@@ -113,27 +115,67 @@ ggsave(file="figure/zig_full_size400.png",pp2,width = 20,height = 16)
 
 ####power plot####
 
-powerplot <- function(model,size, width = 20, height=12, 
-                      fn = paste0("figure/", model,"_power_size",size,".png"))
+powerplot <- function(model,size, width = 20, height=12, delta.base = TRUE,
+                      fn = paste0("figure/", model,"_power_size",size, if (!delta.base) "_effectSize(no_batch)", ".png"))
 {
   parameter = switch(model, 
                      zinb = parameterNB, 
                      zig = parameterLN, 
                      ziln = parameterLN)
-  j.index <- c(1,5,3)
-  k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
+  k.index = k.core # c(7,9,10,12,25,27,28,30,43,45,46,48)
   param.k = apply(parameter[k.index,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))
-  ylim = c(0,1)
+  
+  if (delta.base) {
+    i.rng = c(2,3,4,6,8)
+    disease.levels = c("Effect_mu(D>H)", "Effect_theta(D>H)", "Effect_pi(D<H)",
+                       "Effect_mu(D>H).pi(D<H)", "Effect_mu(D>H),pi(D>H)")
+    disease.labels = c(TeX("D2 ($\\mu_D$>$\\mu_{H}$)"), 
+                       TeX("D3 ($\\theta_D$>$\\theta_{H}$)"),
+                       TeX("D4 ($\\pi_D$<$\\pi_{H}$)"),
+                       TeX("D6 ($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
+                       TeX("D8 ($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)"))
+    j.rng = c(1,5,3)
+    batch.levels = c("no batch effect", "large(+,+,-) batch effect", "large(+,-,-) batch effect")
+    batch.labels = c("K1 (0, 0, 0)", "K3 (1, 1, -1)", "K5 (1, -1, -1)")
+    
+  } else {
+    i.rng = c(11, 13, 15, 2, 4, 6, 12, 14, 16)
+    disease.levels = c("Effect_mu_small", "Effect_mu(D>H)", "Effect_mu_large", 
+                       "Effect_pi_small", "Effect_pi(D<H)", "Effect_pi_large", 
+                       "Effect_mu.pi_small", "Effect_mu(D>H).pi(D<H)", "Effect_mu.pi_large")
+    disease.labels = c(TeX("D11. $\\delta = (0.5, 0, 0)$"),
+                       TeX("D2. $\\delta = (1, 0, 0)$"),
+                       TeX("D13. $\\delta = (2, 0, 0)$"),
+                       TeX("D13. $\\delta = (0, 0, -0.5)$"),
+                       TeX("D4. $\\delta = (0, 0, -1)$"),
+                       TeX("D14. $\\delta = (0, 0, -2)$"),
+                       TeX("D15. $\\delta = (0.5, 0, -0.5)$"),
+                       TeX("D6. $\\delta = (1, 0, -1)$"),
+                       TeX("D16. $\\delta = (2, 0, -2)$"))
+    disease2.labels = c(TeX("$\\mu$ effect (D2 and its variants)"),
+                       TeX("$\\mu$ effect (D2 and its variants)"),
+                       TeX("$\\mu$ effect (D2 and its variants)"),
+                       TeX("$\\pi$ effect (D4 and its variants)"),
+                       TeX("$\\pi$ effect (D4 and its variants)"),
+                       TeX("$\\pi$ effect (D4 and its variants)"),
+                       TeX("$\\mu$ & $\\pi$ effect (D6 and its variants)"),
+                       TeX("$\\mu$ & $\\pi$ effect (D6 and its variants)"),
+                       TeX("$\\mu$ & $\\pi$ effect (D6 and its variants)"))
+    j.rng = 1
+    batch.levels = c("no batch effect")
+    batch.labels = c("K1 (0, 0, 0)")
+  }
   
   res3 <- NULL
-  for(i in c(2,3,4,6,8))
+  for(i in i.rng)
   {
     
-    for(j in j.index)
+    for(j in j.rng)
     {
+      cat("\ni = ",i,"j = ",j, "k = ")
       for(k in k.index)
       {
-        cat("i= ",i,"j= ",j,"k= ",k, "\n")
+        cat(k, " ")
         result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
         result.stat <- data.frame(result$stat)
         
@@ -143,7 +185,7 @@ powerplot <- function(model,size, width = 20, height=12,
                   "i" = i,"j" = j,"k" = k,
                   "batch" = as.character(result$setting$kappa[4]),
                   "effect" = as.character(result$setting$delta[4]))%>%
-          dplyr::select("LB","LN","MAST","KW","KW-II","DESeq2","MGS", "i","j","k","batch","effect")
+          dplyr::select("LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "i","j","k","batch","effect")
         
         res3 <- rbind(res3,tmp[1,])
       }
@@ -153,48 +195,45 @@ powerplot <- function(model,size, width = 20, height=12,
   
   res3 <- res3 %>% 
     gather(key = "method", value = "p.value",
-           `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DESeq2`, `MGS`)
+           `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
   res3$method_f = factor(res3$method,
-                         levels = c("LN", "LB", "MAST", "KW", "KW-II","DESeq2", "MGS"),
-                         labels = c("LN", "LB", "MAST", "KW", "KW-II","DESeq2", "MGS"))
-  res3$batch_f = factor(res3$batch,
-                        levels = c("no batch effect", 
-                                   "large(+,+,-) batch effect",
-                                   "large(+,-,-) batch effect"),
-                        labels = c("K1 (0, 0, 0)",
-                                   "K3 (1, 1, -1)",
-                                   "K5 (1, -1, -1)"))
-  res3$effect_f = factor(res3$effect,
-                         levels = c("Effect_mu(D>H)", "Effect_theta(D>H)", "Effect_pi(D<H)",
-                                    "Effect_mu(D>H).pi(D<H)", "Effect_mu(D>H),pi(D>H)"), 
-                         labels = c(TeX("D2 ($\\mu_D$>$\\mu_{H}$)"), 
-                                    TeX("D3 ($\\theta_D$>$\\theta_{H}$)"),
-                                    TeX("D4 ($\\pi_D$<$\\pi_{H}$)"),
-                                    TeX("D6 ($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
-                                    TeX("D8 ($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)")))
+                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"),
+                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"))
+  res3$batch_f = factor(res3$batch, levels = batch.levels, labels = batch.labels)
+  res3$effect_f = factor(res3$effect, levels = disease.levels, labels = disease.labels)
+  if (!delta.base) res3$effect2_f = factor(res3$effect, levels = disease.levels, labels = disease2.labels)
   res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
-  
+# tmp.res <<- res3  
   res3 %>%
-    ggplot(aes(factor(k), p.value,fill = batch_f)) +
+    ggplot(aes(factor(k), p.value, fill = batch_f)) +
     geom_bar(stat="identity", position=position_dodge()) +
-    geom_hline(yintercept=0.05, col="black", linetype = 2) + ylim(ylim) + 
+    geom_hline(yintercept=0.05, col="black", linetype = 2) + ylim(c(0,1)) + 
+    theme_bw() +
     theme(legend.position = "none", axis.text.x = element_text(angle=90)) +
     scale_x_discrete(labels=param.k) +
-    scale_fill_manual(name = TeX("Batch effects ($\\kappa_\\mu, \\kappa_\\theta, \\kappa_{\\pi}$)"),
-                      values=c("K1 (0, 0, 0)"  = "dodgerblue",
-                               "K3 (1, 1, -1)" = "chartreuse3",
-                               "K5 (1, -1, -1)" = "tomato1")) +
+    {if (delta.base) 
+      scale_fill_manual(name = TeX("Batch effects ($\\kappa_\\mu, \\kappa_\\theta, \\kappa_{\\pi}$)"),
+                        values=c("K1 (0, 0, 0)"  = "dodgerblue",
+                                 "K3 (1, 1, -1)" = "chartreuse3",
+                                 "K5 (1, -1, -1)" = "tomato1")) 
+      else
+      scale_fill_manual(values=c("K1 (0, 0, 0)"  = "dodgerblue"))} +
+    {if (!delta.base) guides(fill = FALSE)} +
     xlab(expression("baseline (" * mu ~ ", " * theta * ", " * pi * ")")) +
     ylab("rejection rate") +
-    facet_grid(cols = vars(method_f), rows = vars(effect_f), labeller = label_parsed) +
+    {if (!delta.base) facet_nested(method_f ~ effect2_f + effect_f, labeller = label_parsed)} +
+    {if (delta.base) facet_grid(rows = vars(method_f), cols = vars(effect_f), labeller = label_parsed)} +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> p
   ggsave(file = fn, p, width = width, height= height)
   p
-  
 }
+
+
 
 powerplot(model = "ziln",size =400)
 powerplot(model = "ziln",size =80)
+powerplot(model = "ziln",size =400, delta.base = FALSE)
+powerplot(model = "ziln",size =80, delta.base = FALSE)
 
 powerplot(model = "ziln",size =400, width = 10, height = 7, 
           fn = paste0("figure/ziln_power_size400_2.png"))
@@ -213,3 +252,114 @@ powerplot(model = "zinb",size =400, width = 10, height = 7,
           fn = paste0("figure/zinb_power_size400_2.png"))
 powerplot(model = "zinb",size =80, width = 10, height = 7, 
           fn = paste0("figure/zinb_power_size80_2.png"))
+
+
+powercurve <- function(model, width = 20, height=12,
+                       fn = paste0("figure/", model,"_power_size",size, "_curve", ".png"))
+{
+  parameter = switch(model, 
+                     zinb = parameterNB, 
+                     zig = parameterLN, 
+                     ziln = parameterLN)
+  param.k = apply(parameter[k.index,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))
+  
+  {
+    # i.rng = c(11, 13, 15, 2, 4, 6, 12, 14, 16)
+    # disease.levels = c("Effect_mu_small", "Effect_mu(D>H)", "Effect_mu_large", 
+    #                    "Effect_pi_small", "Effect_pi(D<H)", "Effect_pi_large", 
+    #                    "Effect_mu.pi_small", "Effect_mu(D>H).pi(D<H)", "Effect_mu.pi_large")
+    # disease.labels = c(TeX("D11. $\\delta = (0.5, 0, 0)$"),
+    #                    TeX("D2. $\\delta = (1, 0, 0)$"),
+    #                    TeX("D13. $\\delta = (2, 0, 0)$"),
+    #                    TeX("D13. $\\delta = (0, 0, -0.5)$"),
+    #                    TeX("D4. $\\delta = (0, 0, -1)$"),
+    #                    TeX("D14. $\\delta = (0, 0, -2)$"),
+    #                    TeX("D15. $\\delta = (0.5, 0, -0.5)$"),
+    #                    TeX("D6. $\\delta = (1, 0, -1)$"),
+    #                    TeX("D16. $\\delta = (2, 0, -2)$"))
+    # disease2.labels = c(TeX("$\\mu$ effect (D2 and its variants)"),
+    #                     TeX("$\\mu$ effect (D2 and its variants)"),
+    #                     TeX("$\\mu$ effect (D2 and its variants)"),
+    #                     TeX("$\\pi$ effect (D4 and its variants)"),
+    #                     TeX("$\\pi$ effect (D4 and its variants)"),
+    #                     TeX("$\\pi$ effect (D4 and its variants)"),
+    #                     TeX("$\\mu$ & $\\pi$ effect (D6 and its variants)"),
+    #                     TeX("$\\mu$ & $\\pi$ effect (D6 and its variants)"),
+    #                     TeX("$\\mu$ & $\\pi$ effect (D6 and its variants)"))
+    i.rng = c(1, 2, 4, 6)
+    disease.levels = c("Effect_null", "Effect_mu(D>H)", "Effect_pi(D<H)", "Effect_mu(D>H).pi(D<H)")
+    disease.labels = c(TeX("D1. $\\delta = (0, 0, 0)$"),
+                       TeX("D2. $\\delta = (1, 0, 0)$"),
+                       TeX("D4. $\\delta = (0, 0, -1)$"),
+                       TeX("D6. $\\delta = (1, 0, -1)$"))
+    k.rng = c(7, 25, 43) # c(7,9,10,12,25,27,28,30,43,45,46,48)
+    base.labels = c(TeX("$(\\mu, \\theta, \\pi)$ = (1, 0.5, 0.6)"),
+                    TeX("$(\\mu, \\theta, \\pi)$ = (1, 0.5, 0.75)"),
+                    TeX("$(\\mu, \\theta, \\pi)$ = (1, 0.5, 0.9)"))
+    j.rng = 1
+    batch.levels = c("no batch effect")
+    batch.labels = c("K1 (0, 0, 0)")
+    
+    n.rng = c(80, 400)
+    n.labels = paste0("n==", n.rng)
+  }
+  
+  res3 <- NULL
+  for (size in n.rng) {
+    for (i in i.rng) {
+      for (j in j.rng) {
+        cat("\nn = ", size, "i = ", i, "j = ", j, "k = ")
+        for(k in k.rng) {
+          cat(k, " ")
+          result <- readRDS(paste0("output/stat-n", size, "-pert0.5-", model, "-", i, ".", j, ".", k, ".rds"))
+          # result.stat <- data.frame(result$stat)
+          result.cdf <- data.frame(result$cdf %>% t)
+          
+          tmp <- 
+            result.cdf%>% 
+            mutate (cutoff = attr(result$cdf, "cutoff"),
+                    "LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
+                    n = size, i = i, j = j, k = k,
+                    "batch" = as.character(result$setting$kappa[4]),
+                    "effect" = as.character(result$setting$delta[4])) %>%
+            dplyr::select(cutoff, "LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", 
+                          n, i, j, k, batch, effect)
+          res3 <- rbind(res3, tmp)
+        }
+      }
+    }
+  }
+  # res3[res3$method_f == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects # not needed for this fn.
+  
+  res3 <- res3 %>% 
+    gather(key = "method", value = "rejection.rate",
+           `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
+  res3$method_f = factor(res3$method,
+                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"),
+                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"))
+  res3$batch_f = factor(res3$batch, levels = batch.levels, labels = batch.labels)
+  res3$effect_f = factor(res3$effect, levels = disease.levels, labels = disease.labels)
+  # res3$effect2_f = factor(res3$effect, levels = disease.levels, labels = disease2.labels)
+  res3$baseline_f = factor(res3$k, levels = k.rng, labels = base.labels)
+  res3$size_f = factor(res3$n, levels = n.rng, labels = n.labels)
+  
+  # res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
+  # tmp.res <<- res3  
+  # res3 %>%
+  res3 %>% 
+    ggplot(aes(cutoff, rejection.rate, col = method_f)) +
+    geom_line() +
+    geom_abline(slope = 1, intercept = 0, col = "gray") +
+    geom_vline(xintercept=0.05, col="black", linetype = 2) + 
+    ylim(c(0,1)) + xlim(c(0,1)) + 
+    theme(legend.position = "none", axis.text.x = element_text(angle=90)) +
+    guides(fill = FALSE) +
+    xlab("cut-off values") +
+    ylab("power (rejection rate)") +
+    facet_nested(baseline_f ~ size_f + effect_f, labeller = label_parsed) +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> p
+  ggsave(file = fn, p, width = width, height= height)
+  p
+}
+powercurve(model = "ziln")

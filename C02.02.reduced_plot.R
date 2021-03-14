@@ -7,7 +7,7 @@ source("C01.02.simulation.setup.R")
 reducedplot <- function(model) {
   i = 1
   j.index <- c(1,5,3)
-  k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
+  k.index = k.core # c(7,9,10,12,25,27,28,30,43,45,46,48)
   parameter = switch(model, 
                      zinb = parameterNB, 
                      zig = parameterLN, 
@@ -18,8 +18,10 @@ reducedplot <- function(model) {
   {
     for(j in j.index)
     {
+      cat("\nsize = ", size, "j = ", j, "k = ")
       for(k in k.index)
       {
+        cat(k , " ")
         result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
         result.stat <- data.frame(result$stat)
 
@@ -27,19 +29,19 @@ reducedplot <- function(model) {
                                       "i" = i,"j" = j,"k" = k,"size"=size,
                                       "batch" = as.character(result$setting$kappa[4]),
                                       "effect" = as.character(result$setting$delta[4])) %>%
-          dplyr::select("LB","LN","MAST","KW","KW-II","DESeq2", "MGS", "i","j","k","batch","effect","size")
+          dplyr::select("LB","LN","MAST","KW","KW-II","DS2", "DS2ZI", "MGS", "i","j","k","batch","effect","size")
 
         res3 <- rbind(res3,tmp[1,])
       }
     }
   }
   # 
-  res3 <- res3 %>% gather(key = "method", value = "p.value",`LB`,`LN`,`MAST`,`KW`,`KW-II`,`DESeq2`, `MGS`)
-res.tmp <<- res3
+# res.tmp <<- res3
+  res3 <- res3 %>% gather(key = "method", value = "p.value",`LB`,`LN`,`MAST`,`KW`,`KW-II`, `DS2`, `DS2ZI`, `MGS`)
   res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
   res3$method_f = factor(res3$method,
-                         levels = c("LN", "LB", "MAST", "KW", "KW-II","DESeq2", "MGS"),
-                         labels = c("LN", "LB", "MAST", "KW", "KW-II","DESeq2", "MGS"))
+                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"),
+                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"))
   res3$batch_f = factor(res3$batch,
                         levels = c("no batch effect", 
                                    "large(+,+,-) batch effect",
