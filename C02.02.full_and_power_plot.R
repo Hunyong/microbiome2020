@@ -255,7 +255,7 @@ powerplot(model = "zinb",size =80, width = 10, height = 7,
 
 
 powercurve <- function(model, width = 20, height=12,
-                       fn = paste0("figure/", model,"_power_size",size, "_curve", ".png"))
+                       fn = paste0("figure/", model,"_power_curve", ".png"))
 {
   parameter = switch(model, 
                      zinb = parameterNB, 
@@ -344,7 +344,7 @@ powercurve <- function(model, width = 20, height=12,
   res3$size_f = factor(res3$n, levels = n.rng, labels = n.labels)
   
   # res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
-  # tmp.res <<- res3  
+tmp.res <<- res3
   # res3 %>%
   res3 %>% 
     ggplot(aes(cutoff, rejection.rate, col = method_f)) +
