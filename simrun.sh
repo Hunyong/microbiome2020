@@ -16,7 +16,7 @@ done;
 # extra after the core is done
 for l in {1..3}; do # ZINB, ZIG, ZILN
   for j in {1..5}; do 
-    for k in {1..54}; do 
+    for k in {1..54}; do
       sbatch --time=10:00:00 --mem 10000 2run-code.sh 0 $j $k $l 5 80;
       sbatch --time=40:00:00 --mem 10000  2run-code.sh 0 $j $k $l 5 400; 
       if [[ "$l" = 3 ]]; then
@@ -28,6 +28,23 @@ for l in {1..3}; do # ZINB, ZIG, ZILN
     done; 
   done; 
 done;
+
+# if [["$l" == 1]]; then
+#         case "$j" in
+#           "1"|"3"|"5")
+#           
+#         ;;
+#         
+#       fi;
+#       case $l in
+# case "$1" in 
+#   "cat"|"dog"|"mouse")
+#     echo "dollar 1 is either a cat or a dog or a mouse"
+#   ;;
+#   *)
+#     echo "none of the above"
+#   ;;
+# esac
 
 # ijk = scenarios
 # i is being looped inside Rscripts.

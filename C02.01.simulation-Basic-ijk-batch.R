@@ -112,9 +112,7 @@ for (i in rng) {
     
     n.gene; n.sample; 
     print(test.dim <- method.stat %>% length)
-    cdf.cutoff = (0:100)/100
-    #
-    
+    cdf.cutoff = c((0:100)/500, 0.2 + 0.8 * (1:80)/80) # higher resolution for < 0.2.
     
     tt(1)
     set.seed(i*10^3 + j*10^2 + k)

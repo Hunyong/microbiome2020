@@ -22,15 +22,20 @@ reducedplot <- function(model) {
       for(k in k.index)
       {
         cat(k , " ")
-        result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
-        result.stat <- data.frame(result$stat)
-
-        tmp <- result.stat%>% mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
-                                      "i" = i,"j" = j,"k" = k,"size"=size,
-                                      "batch" = as.character(result$setting$kappa[4]),
-                                      "effect" = as.character(result$setting$delta[4])) %>%
-          dplyr::select("LB","LN","MAST","KW","KW-II","DS2", "DS2ZI", "MGS", "i","j","k","batch","effect","size")
-
+        fn.tmp = paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds")
+        if (file.exists(fn.tmp)) {
+          result <- readRDS(fn.tmp)
+          result.stat <- data.frame(result$stat)
+          tmp <- result.stat%>% mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
+                                        "i" = i,"j" = j,"k" = k,"size"=size,
+                                        "batch" = as.character(result$setting$kappa[4]),
+                                        "effect" = as.character(result$setting$delta[4])) %>%
+            dplyr::select("LB","LN","MAST","KW","KW-II","DS2", "DS2ZI", "MGS", "i","j","k","batch","effect","size")
+        } else {
+          tmp <- NULL
+          cat("(Not available!) ")
+        }
+        
         res3 <- rbind(res3,tmp[1,])
       }
     }
@@ -65,7 +70,8 @@ reducedplot <- function(model) {
     xlab(expression("baseline (" * mu ~ ", " * theta * ", " * pi * ")")) +
     ylab("rejection rate") +
     ggtitle(paste0("type-I error"))+
-    facet_grid(rows = vars(method_f),cols = vars(size),labeller = label_parsed)+
+    facet_grid(rows = vars(method_f),cols = vars(size),labeller = label_parsed) +
+    theme_bw() +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> p
   
   ggsave(file = paste0("figure/", model,"_null_size.png"), p, width = 5, height=6)

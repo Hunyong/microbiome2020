@@ -311,19 +311,24 @@ powercurve <- function(model, width = 20, height=12,
         cat("\nn = ", size, "i = ", i, "j = ", j, "k = ")
         for(k in k.rng) {
           cat(k, " ")
-          result <- readRDS(paste0("output/stat-n", size, "-pert0.5-", model, "-", i, ".", j, ".", k, ".rds"))
-          # result.stat <- data.frame(result$stat)
-          result.cdf <- data.frame(result$cdf %>% t)
-          
-          tmp <- 
-            result.cdf%>% 
-            mutate (cutoff = attr(result$cdf, "cutoff"),
-                    "LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
-                    n = size, i = i, j = j, k = k,
-                    "batch" = as.character(result$setting$kappa[4]),
-                    "effect" = as.character(result$setting$delta[4])) %>%
-            dplyr::select(cutoff, "LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", 
-                          n, i, j, k, batch, effect)
+          fn.tmp = paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds")
+          if (file.exists(fn.tmp)) {
+            result <- readRDS(paste0("output/stat-n", size, "-pert0.5-", model, "-", i, ".", j, ".", k, ".rds"))
+            # result.stat <- data.frame(result$stat)
+            result.cdf <- data.frame(result$cdf %>% t)
+            
+            tmp <- 
+              result.cdf%>% 
+              mutate (cutoff = attr(result$cdf, "cutoff"),
+                      "LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
+                      n = size, i = i, j = j, k = k,
+                      "batch" = as.character(result$setting$kappa[4]),
+                      "effect" = as.character(result$setting$delta[4])) %>%
+              dplyr::select(cutoff, "LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", 
+                            n, i, j, k, batch, effect)
+          } else {
+            tmp <- NULL
+          }
           res3 <- rbind(res3, tmp)
         }
       }
@@ -343,17 +348,29 @@ powercurve <- function(model, width = 20, height=12,
   res3$baseline_f = factor(res3$k, levels = k.rng, labels = base.labels)
   res3$size_f = factor(res3$n, levels = n.rng, labels = n.labels)
   
+  res.points = 
+    res3 %>% 
+    dplyr::filter(((cutoff * 100) %% 8) == {as.numeric(method_f) %% 8} )
   # res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
 tmp.res <<- res3
   # res3 %>%
   res3 %>% 
-    ggplot(aes(cutoff, rejection.rate, col = method_f)) +
+    ggplot(aes(cutoff, rejection.rate, col = method_f, linetype = method_f)) +
     geom_line() +
+    geom_point(data = res.points, size = 2,
+               aes(cutoff, rejection.rate, col = method_f, shape = method_f)) +
     geom_abline(slope = 1, intercept = 0, col = "gray") +
     geom_vline(xintercept=0.05, col="black", linetype = 2) + 
-    ylim(c(0,1)) + xlim(c(0,1)) + 
+    ylim(c(0,1)) + 
+    # xlim(c(0,1)) + 
+    scale_x_continuous(breaks = c(0, 0.01, 0.05, 0.10, 0.15, 0.2), limits = c(0, 0.2)) +
+    scale_shape_manual(values = c(LN = 16, LB = 30, MAST = 1, KW = 18, `KW-II` = 30, DS2 = 8, `DS2ZI` = 30, MGS = 3)) +
+    scale_linetype_manual(values = c(LN = 1, LB = 2, MAST = 1, KW = 1, `KW-II` = 2, DS2 = 1, `DS2ZI` = 2, MGS = 1)) +
+    scale_color_manual(values = c(LN = "firebrick", LB = "firebrick", MAST = "darkseagreen4", KW = "darkorchid3", `KW-II` = "darkorchid3", 
+                                  DS2 = "dodgerblue3", `DS2ZI` = "dodgerblue3", MGS = "goldenrod3")) +
     theme(legend.position = "none", axis.text.x = element_text(angle=90)) +
-    guides(fill = FALSE) +
+    guides(fill = FALSE, col = guide_legend(nrow = 1, title = NULL), 
+           shape = guide_legend(nrow = 1, title = NULL), linetype = guide_legend(nrow = 1, title = NULL)) +
     xlab("cut-off values") +
     ylab("power (rejection rate)") +
     facet_nested(baseline_f ~ size_f + effect_f, labeller = label_parsed) +
