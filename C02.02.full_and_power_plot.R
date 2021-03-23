@@ -115,7 +115,7 @@ ggsave(file="figure/zig_full_size400.png",pp2,width = 20,height = 16)
 
 ####power plot####
 
-powerplot <- function(model,size, width = 20, height=12, delta.base = TRUE,
+powerplot <- function(model,size, width = 10, height = 7, delta.base = TRUE,
                       fn = paste0("figure/", model,"_power_size",size, if (!delta.base) "_effectSize(no_batch)", ".png"))
 {
   parameter = switch(model, 
@@ -235,23 +235,11 @@ powerplot(model = "ziln",size =80)
 powerplot(model = "ziln",size =400, delta.base = FALSE)
 powerplot(model = "ziln",size =80, delta.base = FALSE)
 
-powerplot(model = "ziln",size =400, width = 10, height = 7, 
-          fn = paste0("figure/ziln_power_size400_2.png"))
-powerplot(model = "ziln",size =80, width = 10, height = 7, 
-          fn = paste0("figure/ziln_power_size80_2.png"))
-
 powerplot(model = "zig",size =400)
 powerplot(model = "zig",size =80)
-powerplot(model = "zig",size =400, width = 10, height = 7, 
-          fn = paste0("figure/zig_power_size400_2.png"))
-powerplot(model = "zig",size =80, width = 10, height = 7, 
-          fn = paste0("figure/zig_power_size80_2.png"))
+
 powerplot(model = "zinb",size =400)
 powerplot(model = "zinb",size =80)
-powerplot(model = "zinb",size =400, width = 10, height = 7, 
-          fn = paste0("figure/zinb_power_size400_2.png"))
-powerplot(model = "zinb",size =80, width = 10, height = 7, 
-          fn = paste0("figure/zinb_power_size80_2.png"))
 
 
 powercurve <- function(model, width = 20, height=12,
@@ -348,9 +336,11 @@ powercurve <- function(model, width = 20, height=12,
   res3$baseline_f = factor(res3$k, levels = k.rng, labels = base.labels)
   res3$size_f = factor(res3$n, levels = n.rng, labels = n.labels)
   
+  # grid points for dots, different x-values for each method.
   res.points = 
     res3 %>% 
     dplyr::filter(((cutoff * 100) %% 8) == {as.numeric(method_f) %% 8} )
+tmp.p <<- res.points
   # res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
 tmp.res <<- res3
   # res3 %>%
@@ -364,8 +354,8 @@ tmp.res <<- res3
     ylim(c(0,1)) + 
     # xlim(c(0,1)) + 
     scale_x_continuous(breaks = c(0, 0.01, 0.05, 0.10, 0.15, 0.2), limits = c(0, 0.2)) +
-    scale_shape_manual(values = c(LN = 16, LB = 30, MAST = 1, KW = 18, `KW-II` = 30, DS2 = 8, `DS2ZI` = 30, MGS = 3)) +
-    scale_linetype_manual(values = c(LN = 1, LB = 2, MAST = 1, KW = 1, `KW-II` = 2, DS2 = 1, `DS2ZI` = 2, MGS = 1)) +
+    scale_shape_manual(values = c(LN = 16, LB = 3, MAST = 1, KW = 18, `KW-II` = 3, DS2 = 8, `DS2ZI` = 3, MGS = 3)) +
+    scale_linetype_manual(values = c(LN = 1, LB = 3, MAST = 1, KW = 1, `KW-II` = 3, DS2 = 1, `DS2ZI` = 3, MGS = 1)) +
     scale_color_manual(values = c(LN = "firebrick", LB = "firebrick", MAST = "darkseagreen4", KW = "darkorchid3", `KW-II` = "darkorchid3", 
                                   DS2 = "dodgerblue3", `DS2ZI` = "dodgerblue3", MGS = "goldenrod3")) +
     theme(legend.position = "none", axis.text.x = element_text(angle=90)) +
