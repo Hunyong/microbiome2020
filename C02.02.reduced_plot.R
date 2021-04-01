@@ -61,7 +61,6 @@ reducedplot <- function(model) {
     #ggplot(aes(factor(k), p.value, col=batch, group=batch, fill = batch)) +
     geom_bar(stat="identity", position=position_dodge()) +
     geom_hline(yintercept=0.05, col="black", linetype = 2) + ylim(c(0,0.2)) + 
-    theme(legend.position = "none", axis.text.x = element_text(angle=90)) +
     scale_x_discrete(labels=param.k) +
     scale_fill_manual(name = TeX("Batch effects ($\\kappa_\\mu, \\kappa_\\theta, \\kappa_{\\pi}$)"),
                       values=c("K1 (0, 0, 0)"  = "dodgerblue",
@@ -72,7 +71,8 @@ reducedplot <- function(model) {
     ggtitle(paste0("type-I error"))+
     facet_grid(rows = vars(method_f),cols = vars(size),labeller = label_parsed) +
     theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> p
+    theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", 
+          axis.text.x = element_text(angle=90)) -> p
   
   ggsave(file = paste0("figure/", model,"_null_size.png"), p, width = 5, height=6)
   p
@@ -81,7 +81,7 @@ reducedplot <- function(model) {
 
 reducedplot(model = "ziln")
 
-reducedplot(model = "zig")
-reducedplot(model = "zinb")
+# reducedplot(model = "zig")
+# reducedplot(model = "zinb")
 
 

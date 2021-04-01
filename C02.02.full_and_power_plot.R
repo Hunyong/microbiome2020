@@ -115,7 +115,7 @@ ggsave(file="figure/zig_full_size400.png",pp2,width = 20,height = 16)
 
 ####power plot####
 
-powerplot <- function(model,size, width = 10, height = 7, delta.base = TRUE,
+powerplot <- function(model,size, width = 12, height = 8, delta.base = TRUE,
                       fn = paste0("figure/", model,"_power_size",size, if (!delta.base) "_effectSize(no_batch)", ".png"))
 {
   parameter = switch(model, 
@@ -242,7 +242,7 @@ powerplot(model = "zinb",size =400)
 powerplot(model = "zinb",size =80)
 
 
-powercurve <- function(model, width = 20, height=12,
+powercurve <- function(model, width = 12, height = 9,
                        fn = paste0("figure/", model,"_power_curve", ".png"))
 {
   parameter = switch(model, 
@@ -353,19 +353,18 @@ tmp.res <<- res3
     geom_vline(xintercept=0.05, col="black", linetype = 2) + 
     ylim(c(0,1)) + 
     # xlim(c(0,1)) + 
-    scale_x_continuous(breaks = c(0, 0.01, 0.05, 0.10, 0.15, 0.2), limits = c(0, 0.2)) +
+    scale_x_continuous(breaks = c(0, 0.03, 0.05, 0.10, 0.15, 0.2), limits = c(0, 0.2)) +
     scale_shape_manual(values = c(LN = 16, LB = 3, MAST = 1, KW = 18, `KW-II` = 3, DS2 = 8, `DS2ZI` = 3, MGS = 3)) +
     scale_linetype_manual(values = c(LN = 1, LB = 3, MAST = 1, KW = 1, `KW-II` = 3, DS2 = 1, `DS2ZI` = 3, MGS = 1)) +
     scale_color_manual(values = c(LN = "firebrick", LB = "firebrick", MAST = "darkseagreen4", KW = "darkorchid3", `KW-II` = "darkorchid3", 
                                   DS2 = "dodgerblue3", `DS2ZI` = "dodgerblue3", MGS = "goldenrod3")) +
-    theme(legend.position = "none", axis.text.x = element_text(angle=90)) +
     guides(fill = FALSE, col = guide_legend(nrow = 1, title = NULL), 
            shape = guide_legend(nrow = 1, title = NULL), linetype = guide_legend(nrow = 1, title = NULL)) +
     xlab("cut-off values") +
     ylab("power (rejection rate)") +
     facet_nested(baseline_f ~ size_f + effect_f, labeller = label_parsed) +
     theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> p
+    theme(legend.position = "bottom", axis.text.x = element_text(angle=90), plot.title = element_text(hjust = 0.5))  -> p
   ggsave(file = fn, p, width = width, height= height)
   p
 }
