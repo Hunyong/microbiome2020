@@ -296,9 +296,9 @@ for (i in rng) {
               if (all(is.na(x))) rep(NA, length(cdf.cutoff)) else ecdf(x)(cdf.cutoff)
             }) %>% t
           
-          result$pval.cdf["DS2", ] <- result$DS2$pval %>% Reduce(c, .) %>% {ecdf(.)(cdf.cutoff)}
-          result$pval.cdf["DS2ZI", ] <- result$DS2ZI$pval %>% Reduce(c, .) %>% {ecdf(.)(cdf.cutoff)}
-          result$pval.cdf["MGS", ] <- result$MGS$pval %>% Reduce(c, .) %>% {ecdf(.)(cdf.cutoff)}
+          result$pval.cdf["DS2", ] <- result$DS2$pval %>% Reduce(c, .) %>% {if (all(is.na(.))) NA else ecdf(.)(cdf.cutoff)}
+          result$pval.cdf["DS2ZI", ] <- result$DS2ZI$pval %>% Reduce(c, .) %>% {if (all(is.na(.))) NA else ecdf(.)(cdf.cutoff)}
+          result$pval.cdf["MGS", ] <- result$MGS$pval %>% Reduce(c, .) %>% {if (all(is.na(.))) NA else ecdf(.)(cdf.cutoff)}
           
           
     # 3. Statistics
