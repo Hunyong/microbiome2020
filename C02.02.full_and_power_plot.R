@@ -3,7 +3,7 @@ library(latex2exp)
 library(ggh4x) # for nested facetting
 source("C01.02.simulation.setup.R")
 
-fullplot <- function(size,model)
+fullplot <- function(size, model, res.tmp = TRUE) # res.tmp being globally assigned
 {
   
   parameter = switch(model, 
@@ -12,7 +12,6 @@ fullplot <- function(size,model)
                      ziln = parameterLN)
   k.index = dim(parameter)[1]
   param.k = apply(parameter[,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))
-  ylim = c(0,1)
   
   
   res <- NULL
@@ -74,13 +73,26 @@ fullplot <- function(size,model)
                                        "K5 (1, -1, -1)"))
 # res.tmp <<- res
   res[res$method == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
-# res.tmp2 <<- res
+  res$k <- factor(res$k)
+  if (res.tmp) res.tmp <<- res
   res %>%
-    ggplot(aes(factor(k), p.value,fill = batch_f)) +
-    geom_bar(stat="identity", position=position_dodge()) +
-    geom_hline(yintercept=0.05, col="black", linetype = 2) + ylim(ylim) + 
+    ggplot(aes(k, p.value, fill = batch_f)) +
+    geom_bar(stat="identity", position = position_dodge(width = .8)) +
+    geom_hline(yintercept=0.05, col="black", linetype = 2) + ylim(c(0, 1)) + 
+    geom_point(aes(col = batch_f), position = position_dodge(width = .8), shape = 15, size = 0.1) +
+    # geom_text(data = res %>% filter(p.value==0), aes(label = p.value, col = batch_f), 
+    #           position = position_dodge(width = .8), size = 0.5) +
+    # geom_point(data = res %>% filter(p.value==0), aes(k, p.value, fill = batch_f, col = batch_f),
+    #            shape = 21, size = 0.2,
+    #            position = position_dodge()) +
+    guides(col = FALSE) + 
     theme(legend.position = "none", axis.text.x = element_text(angle=90)) +
-    scale_x_discrete(labels=param.k,guide =guide_axis(n.dodge = 2)) +
+    scale_x_discrete(labels=param.k,guide = guide_axis(n.dodge = 2)) +
+    scale_color_manual(values=c("K1 (0, 0, 0)"  = "dodgerblue",
+                               "K2 (0.5, 0.5, -0.5)"  = "darkgreen",
+                               "K3 (1, 1, -1)" = "chartreuse3",
+                               "K4 (0.5, -0.5, -0.5)"  = "red3",
+                               "K5 (1, -1, -1)" = "tomato1")) +
     scale_fill_manual(name = TeX("Batch effects ($\\kappa_\\mu, \\kappa_\\theta, \\kappa_{\\pi}$)"),
                       values=c("K1 (0, 0, 0)"  = "dodgerblue",
                                "K2 (0.5, 0.5, -0.5)"  = "darkgreen",
@@ -97,45 +109,48 @@ fullplot <- function(size,model)
 
 #width = 32, height = 16
 pn1 <- fullplot(80,model="ziln")
-ggsave(file="figure/ziln_full_size80.png",pn1,width = 20,height = 16)
-pn2 <- fullplot(400,model="ziln")
-ggsave(file="figure/ziln_full_size400.png",pn2,width = 20,height = 16)
+ggsave(file="figure/ziln_full_size80.png", pn1, width = 30, height = 24)
+pn2 <- fullplot(400, model="ziln")
+ggsave(file="figure/ziln_full_size400.png", pn2, width = 30, height = 24)
 
 
-p1 <- fullplot(80,model="zinb")
-ggsave(file="figure/zinb_full_size80.png",p1,width = 20,height = 16)
-p2 <- fullplot(400,model="zinb")
-ggsave(file="figure/zinb_full_size400.png",p2,width = 20,height = 16)
+p1 <- fullplot(80, model="zinb")
+ggsave(file="figure/zinb_full_size80.png", p1, width = 30, height = 24)
+p2 <- fullplot(400, model="zinb")
+ggsave(file="figure/zinb_full_size400.png", p2, width = 30, height = 24)
 
-pp1 <- fullplot(80,model="zig")
-ggsave(file="figure/zig_full_size80.png",pp1,width = 20,height = 16)
-pp2 <- fullplot(400,model="zig")
-ggsave(file="figure/zig_full_size400.png",pp2,width = 20,height = 16)
+pp1 <- fullplot(80, model="zig")
+ggsave(file="figure/zig_full_size80.png", pp1, width = 30, height = 24)
+pp2 <- fullplot(400, model="zig")
+ggsave(file="figure/zig_full_size400.png", pp2, width = 30, height = 24)
 
 
 ####power plot####
 
-powerplot <- function(model,size, width = 12, height = 8, delta.base = TRUE,
-                      fn = paste0("figure/", model,"_power_size",size, if (!delta.base) "_effectSize(no_batch)", ".png"))
+powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE, 
+                      fn = paste0("figure/",  model, "_power_size", size,  if (!delta.base) "_effectSize(no_batch)",  
+                                  if (include.null) "_with_null",  ".png"),
+                      res.tmp = TRUE, include.null = FALSE)
 {
-  parameter = switch(model, 
-                     zinb = parameterNB, 
-                     zig = parameterLN, 
+  require(tidyr)
+  parameter = switch(model,  
+                     zinb = parameterNB,  
+                     zig = parameterLN,  
                      ziln = parameterLN)
-  k.index = k.core # c(7,9,10,12,25,27,28,30,43,45,46,48)
-  param.k = apply(parameter[k.index,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))
+  k.index = k.core # c(7, 9, 10, 12, 25, 27, 28, 30, 43, 45, 46, 48)
+  param.k = apply(parameter[k.index, -1],  1,  function(x) paste0("(",  paste(x,  collapse=",  "),  ")"))
   
   if (delta.base) {
-    i.rng = c(2,3,4,6,8)
-    disease.levels = c("Effect_mu(D>H)", "Effect_theta(D>H)", "Effect_pi(D<H)",
-                       "Effect_mu(D>H).pi(D<H)", "Effect_mu(D>H),pi(D>H)")
-    disease.labels = c(TeX("D2 ($\\mu_D$>$\\mu_{H}$)"), 
-                       TeX("D3 ($\\theta_D$>$\\theta_{H}$)"),
-                       TeX("D4 ($\\pi_D$<$\\pi_{H}$)"),
-                       TeX("D6 ($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"),
+    i.rng = c(2, 3, 4, 6, 8)
+    disease.levels = c("Effect_mu(D>H)",  "Effect_theta(D>H)",  "Effect_pi(D<H)", 
+                       "Effect_mu(D>H).pi(D<H)",  "Effect_mu(D>H),pi(D>H)")
+    disease.labels = c(TeX("D2 ($\\mu_D$>$\\mu_{H}$)"),  
+                       TeX("D3 ($\\theta_D$>$\\theta_{H}$)"), 
+                       TeX("D4 ($\\pi_D$<$\\pi_{H}$)"), 
+                       TeX("D6 ($\\mu_D$>$\\mu_H$, $\\pi_D$<$\\pi_{H}$)"), 
                        TeX("D8 ($\\mu_D$>$\\mu_H$, $\\pi_D$>$\\pi_{H}$)"))
-    j.rng = c(1,5,3)
-    batch.levels = c("no batch effect", "large(+,+,-) batch effect", "large(+,-,-) batch effect")
+    j.rng = c(1, 5, 3)
+    batch.levels = c("no batch effect",  "large(+,+,-) batch effect", "large(+,-,-) batch effect")
     batch.labels = c("K1 (0, 0, 0)", "K3 (1, 1, -1)", "K5 (1, -1, -1)")
     
   } else {
@@ -165,8 +180,13 @@ powerplot <- function(model,size, width = 12, height = 8, delta.base = TRUE,
     batch.levels = c("no batch effect")
     batch.labels = c("K1 (0, 0, 0)")
   }
+  if (include.null) {
+    i.rng = c(1, i.rng)
+    disease.levels = c("Effect_null", disease.levels)
+    disease.labels = c("D1 (null)", disease.labels)
+  }
   
-  res3 <- NULL
+  res <- NULL
   for(i in i.rng)
   {
     
@@ -187,27 +207,30 @@ powerplot <- function(model,size, width = 12, height = 8, delta.base = TRUE,
                   "effect" = as.character(result$setting$delta[4]))%>%
           dplyr::select("LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "i","j","k","batch","effect")
         
-        res3 <- rbind(res3,tmp[1,])
+        res <- rbind(res,tmp[1,])
       }
     }
   }
-  res3[res3$method_f == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
+  res[res$method_f == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
   
-  res3 <- res3 %>% 
+  res <- res %>% 
     gather(key = "method", value = "p.value",
            `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
-  res3$method_f = factor(res3$method,
+  res$method_f = factor(res$method,
                          levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"),
                          labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"))
-  res3$batch_f = factor(res3$batch, levels = batch.levels, labels = batch.labels)
-  res3$effect_f = factor(res3$effect, levels = disease.levels, labels = disease.labels)
-  if (!delta.base) res3$effect2_f = factor(res3$effect, levels = disease.levels, labels = disease2.labels)
-  res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
-# tmp.res <<- res3  
-  res3 %>%
-    ggplot(aes(factor(k), p.value, fill = batch_f)) +
-    geom_bar(stat="identity", position=position_dodge()) +
-    geom_hline(yintercept=0.05, col="black", linetype = 2) + ylim(c(0,1)) + 
+  res$batch_f = factor(res$batch, levels = batch.levels, labels = batch.labels)
+  res$effect_f = factor(res$effect, levels = disease.levels, labels = disease.labels)
+  if (!delta.base) res$effect2_f = factor(res$effect, levels = disease.levels, labels = disease2.labels)
+  res[res$method == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
+  res$k <- factor(res$k)
+  if (res.tmp) res.tmp <<- res  
+  
+  res %>%
+    ggplot(aes(k, p.value, fill = batch_f)) +
+    geom_bar(stat="identity", position = position_dodge(width = .8)) +
+    geom_hline(yintercept=0.05, col="black", linetype = 2) + ylim(c(0, 1)) + 
+    geom_point(aes(col = batch_f), position = position_dodge(width = .8), shape = 15, size = 0.1) +
     theme_bw() +
     theme(legend.position = "none", axis.text.x = element_text(angle=90)) +
     scale_x_discrete(labels=param.k) +
@@ -218,9 +241,16 @@ powerplot <- function(model,size, width = 12, height = 8, delta.base = TRUE,
                                  "K5 (1, -1, -1)" = "tomato1")) 
       else
       scale_fill_manual(values=c("K1 (0, 0, 0)"  = "dodgerblue"))} +
-    {if (!delta.base) guides(fill = FALSE)} +
+    {if (delta.base) 
+      scale_color_manual(values=c("K1 (0, 0, 0)"  = "dodgerblue",
+                                 "K3 (1, 1, -1)" = "chartreuse3",
+                                 "K5 (1, -1, -1)" = "tomato1")) 
+      else
+        scale_color_manual(values=c("K1 (0, 0, 0)"  = "dodgerblue"))} +
+    {if (!delta.base) guides(fill = FALSE, color = FALSE)} +
     xlab(expression("baseline (" * mu ~ ", " * theta * ", " * pi * ")")) +
     ylab("rejection rate") +
+    guides(col = FALSE) +
     {if (!delta.base) facet_nested(method_f ~ effect2_f + effect_f, labeller = label_parsed)} +
     {if (delta.base) facet_grid(rows = vars(method_f), cols = vars(effect_f), labeller = label_parsed)} +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> p
@@ -229,26 +259,29 @@ powerplot <- function(model,size, width = 12, height = 8, delta.base = TRUE,
 }
 
 
+# modify to add the head points!!!!
 
-powerplot(model = "ziln",size =400)
-powerplot(model = "ziln",size =80)
-powerplot(model = "ziln",size =400, delta.base = FALSE)
-powerplot(model = "ziln",size =80, delta.base = FALSE)
+powerplot(model = "ziln", size = 400)
+powerplot(model = "ziln", size = 80)
+powerplot(model = "ziln", size = 80, include.null = TRUE)
+powerplot(model = "ziln", size = 400, delta.base = FALSE) # disease effect sensitivity analysis
+powerplot(model = "ziln", size = 80, delta.base = FALSE) # disease effect sensitivity analysis
 
-powerplot(model = "zig",size =400)
-powerplot(model = "zig",size =80)
+powerplot(model = "zig", size = 400)
+powerplot(model = "zig", size = 80)
 
-powerplot(model = "zinb",size =400)
-powerplot(model = "zinb",size =80)
+powerplot(model = "zinb", size = 400)
+powerplot(model = "zinb", size = 80)
 
 
-powercurve <- function(model, width = 12, height = 9,
-                       fn = paste0("figure/", model,"_power_curve", ".png"))
+powercurve <- function(model,  width = 12,  height = 9,
+                       fn = paste0("figure/", model,"_power_curve", ".png"), res.tmp = TRUE)
 {
   parameter = switch(model, 
                      zinb = parameterNB, 
                      zig = parameterLN, 
                      ziln = parameterLN)
+  k.index = k.core # c(7, 9, 10, 12, 25, 27, 28, 30, 43, 45, 46, 48)
   param.k = apply(parameter[k.index,-1], 1, function(x) paste0("(", paste(x, collapse=", "), ")"))
   
   {
@@ -292,7 +325,7 @@ powercurve <- function(model, width = 12, height = 9,
     n.labels = paste0("n==", n.rng)
   }
   
-  res3 <- NULL
+  res <- NULL
   for (size in n.rng) {
     for (i in i.rng) {
       for (j in j.rng) {
@@ -317,34 +350,34 @@ powercurve <- function(model, width = 12, height = 9,
           } else {
             tmp <- NULL
           }
-          res3 <- rbind(res3, tmp)
+          res <- rbind(res, tmp)
         }
       }
     }
   }
-  # res3[res3$method_f == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects # not needed for this fn.
+  # res[res$method_f == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects # not needed for this fn.
   
-  res3 <- res3 %>% 
+  res <- res %>% 
     gather(key = "method", value = "rejection.rate",
-           `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
-  res3$method_f = factor(res3$method,
+                  `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
+  res$method_f = factor(res$method,
                          levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"),
                          labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"))
-  res3$batch_f = factor(res3$batch, levels = batch.levels, labels = batch.labels)
-  res3$effect_f = factor(res3$effect, levels = disease.levels, labels = disease.labels)
-  # res3$effect2_f = factor(res3$effect, levels = disease.levels, labels = disease2.labels)
-  res3$baseline_f = factor(res3$k, levels = k.rng, labels = base.labels)
-  res3$size_f = factor(res3$n, levels = n.rng, labels = n.labels)
+  res$batch_f = factor(res$batch, levels = batch.levels, labels = batch.labels)
+  res$effect_f = factor(res$effect, levels = disease.levels, labels = disease.labels)
+  # res$effect2_f = factor(res$effect, levels = disease.levels, labels = disease2.labels)
+  res$baseline_f = factor(res$k, levels = k.rng, labels = base.labels)
+  res$size_f = factor(res$n, levels = n.rng, labels = n.labels)
   
   # grid points for dots, different x-values for each method.
   res.points = 
-    res3 %>% 
+    res %>% 
     dplyr::filter(((cutoff * 100) %% 8) == {as.numeric(method_f) %% 8} )
 tmp.p <<- res.points
-  # res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
-tmp.res <<- res3
-  # res3 %>%
-  res3 %>% 
+  # res[res$method == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
+  if (res.tmp) res.tmp <<- res
+  # res %>%
+  res %>% 
     ggplot(aes(cutoff, rejection.rate, col = method_f, linetype = method_f)) +
     geom_line() +
     geom_point(data = res.points, size = 2,

@@ -2,8 +2,8 @@
 # install.packages("BiocManager")
 #BiocManager::install("DESeq2")
 library(BiocManager)
-n.test = 19 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-            #"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI, "WRS", "MGS", "(Reserved)"
+n.test = 20 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
+            #"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI, "WRS", "MGS", "ANCOM.sz", "ANCOM"
 # if(!require(betareg)){
 #   install.packages("betareg")
 # }
@@ -18,7 +18,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
                                 LN.skip = FALSE, MAST.skip = FALSE,
                                 KW.skip = FALSE, Wg.skip = FALSE,
                                 De2.skip = FALSE, WRS.skip = FALSE,
-                                MGS.skip = FALSE,
+                                MGS.skip = FALSE, ANCOM.skip = FALSE,
+                                skip.cumulative = FALSE,
                                 skip.small.n = FALSE) {
                                 # DS2.version = c("vanilla", "zinb")
   # description
@@ -29,9 +30,20 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   # On May 20, 2020: WRS test has been added.
   require(magrittr)
   
+  if (skip.cumulative) { # IF skip.cumulative = TRUE and specify and a method is specified as skipped, all its preceding methods are to be skipped.
+    if (ANCOM.skip) MGS.skip = TRUE
+    if (MGS.skip) WRS.skip = TRUE
+    if (WRS.skip) De2.skip = TRUE
+    if (De2.skip) Wg.skip = TRUE
+    if (Wg.skip) KW.skip = TRUE
+    if (KW.skip) MAST.skip = TRUE
+    if (MAST.skip) LN.skip = TRUE
+    if (LN.skip) LB.skip = TRUE
+  }
+  
   # 0.0 skeleton #empty matrix
   test.names <- c("LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI", "WRS", "MGS", "(Reserved)")
+                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI", "WRS", "MGS", "ANCOM.sz", "ANCOM")
   mat.tmp <- matrix(NA, n.test, n.gene, dimnames = list(test.names, NULL)) # n.test=15, n.gene=1000
   result <- list(coef = mat.tmp, pval = mat.tmp)
   if (skeleton) {return(result)}
@@ -152,7 +164,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     result[[2]]["DS2", index.filtered] <- tmp[,2] #pval.
   } else {cat("DS2-vanilla is skipped\n")}
   
-  #12. De2 + ZINBwave
+  #13. De2 + ZINBwave
   cat("\n13. DS2 zinbwave\n")
   if(!De2.skip){
     DS2 = DS2.zinb
@@ -178,7 +190,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     }
   } else {cat("WRS is skipped\n")}
   
-  #14. metagenomeSeq
+  #15. metagenomeSeq
   cat("15 metagenomeSeq\n")
   if(!MGS.skip){
     tmp <- try({mgs(data[, index.filtered.meta])})
@@ -188,12 +200,23 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     result[[2]]["MGS", index.filtered] <- tmp[, "pval"]     #pval.
   } else {cat("MGS is skipped\n")}
   
-  #15. (reserved)
-  cat("16. Reserved\n")
-  tmp <- data.frame(coef = NA, pval = NA)    #reserved for possible addition
-  result[[1]][15,1] <- tmp[1,1]
-  result[[2]][15,1] <- tmp[1,2]
+  #16. ANCOM-BC
+  cat("16. ANCOM-BC\n")
+  if(!ANCOM.skip){
+    tmp <- try({ANC(data[, index.filtered.meta], ignore.structural.zero = FALSE)})
+    if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+    
+    result[[1]]["ANCOM.sz", index.filtered] <- tmp[,1] #coef.
+    result[[2]]["ANCOM.sz", index.filtered] <- tmp[,2] #pval.
+    result[[1]]["ANCOM", index.filtered] <- tmp[,1] #coef.
+    result[[2]]["ANCOM", index.filtered] <- tmp[,2] #pval.
+    result[[2]]["ANCOM", is.infinite(result[[1]]["ANCOM", ])] = NA
+  } else {cat("ANCOM-BC is skipped\n")}
   
+  # #17. (reserved)
+  # tmp <- data.frame(coef = NA, pval = NA)    #reserved for possible addition
+  # result[[1]][15,1] <- tmp[1,1]
+  # result[[2]][15,1] <- tmp[1,2]
   return(result)
 }
 
@@ -716,4 +739,26 @@ mgs <- function(data) {
     return(matrix(NA, length(gene), 2, dimnames= list(gene.name, c("Estimate", "pval"))))
   }
   tmp
+}
+
+ANC <- function(data, ignore.structural.zero = FALSE) {
+  col.otu = which(grepl("^y", names(data)))
+  y.names = colnames(data)[col.otu]
+  pre.process = 
+    feature_table_pre_process (feature.table = t(data[, col.otu]), 
+                               meta.data = cbind(ID = rownames(data), data[, -col.otu]), 
+                               sample.var = "ID", group.var = "phenotype", 
+                               zero.cut = 1, # This is ignored as we use the already-filtered data
+                               lib.cut = 1000, # This may not play a role as well by design.
+                               neg.lb = FALSE)
+  out.ancom = 
+    ANCOM_BC (feature.table = pre.process$feature.table, grp.name = pre.process$group.name, 
+              grp.ind = pre.process$group.ind, struc.zero = pre.process$structure.zeros, 
+              adj.method = "bonferroni", tol.EM = 1e-5, max.iterNum = 100, perNum = 1000, alpha = 0.05)
+  out = matrix(NA, nrow = length(y.names), ncol = 2, dimnames = list(y.names, c("Estimate", "pval")))
+  out[rownames(out.ancom$feature.table), 1] = out.ancom$res$W
+  out[rownames(out.ancom$feature.table), 2] = out.ancom$res$p.val
+  
+  if (ignore.structural.zero) {out[is.infinite(out[, 1]), 2] = NA}
+  return(out)
 }

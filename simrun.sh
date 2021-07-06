@@ -14,6 +14,24 @@ for l in 3; do # ZILN
 done;
 
 # extra after the core is done
+for i in {1..10}; do
+for l in {1..3}; do # ZINB, ZIG, ZILN
+  for j in {1..5}; do 
+    for k in {1..54}; do
+      sbatch --time=10:00:00 --mem 10000 2run-code.sh $i $j $k $l 5 80;
+      sbatch --time=40:00:00 --mem 10000  2run-code.sh $i $j $k $l 5 400; 
+      if [[ "$l" = 3 ]]; then
+        sbatch --time=10:00:00 --mem 10000  2run-code.sh $i $j $k $l 2.5 80;
+        sbatch --time=40:00:00 --mem 10000  2run-code.sh $i $j $k $l 2.5 400;
+        sbatch --time=10:00:00 --mem 10000  2run-code.sh $i $j $k $l 0 80;
+        sbatch --time=40:00:00 --mem 10000  2run-code.sh $i $j $k $l 0 400;
+      fi;
+    done; 
+  done; 
+done;
+done;
+
+# extra after the core is done
 for l in {1..3}; do # ZINB, ZIG, ZILN
   for j in {1..5}; do 
     for k in {1..54}; do
@@ -28,26 +46,3 @@ for l in {1..3}; do # ZINB, ZIG, ZILN
     done; 
   done; 
 done;
-
-# if [["$l" == 1]]; then
-#         case "$j" in
-#           "1"|"3"|"5")
-#           
-#         ;;
-#         
-#       fi;
-#       case $l in
-# case "$1" in 
-#   "cat"|"dog"|"mouse")
-#     echo "dollar 1 is either a cat or a dog or a mouse"
-#   ;;
-#   *)
-#     echo "none of the above"
-#   ;;
-# esac
-
-# ijk = scenarios
-# i is being looped inside Rscripts.
-# $4 = model (1 = zinb, 2 = zig, 3 = zlin)
-# $5 = perturb (5 = 50%)
-# $6 = n (80, 400)

@@ -2,7 +2,7 @@ library(tidyverse)
 library(latex2exp)
 source("C01.02.simulation.setup.R")
 
-pertplot <- function(model= "ziln", size)
+pertplot <- function(model= "ziln", size, res.tmp = TRUE)
 {
   j.index <- c(1,5,3)
   k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
@@ -55,22 +55,30 @@ pertplot <- function(model= "ziln", size)
                        labels = c("K1 (0, 0, 0)",
                                   "K3 (1, 1, -1)",
                                   "K5 (1, -1, -1)"))
+  res$k <- factor(res$k)
+  if (res.tmp) res.tmp <<- res
+    
   res %>%
-    ggplot(aes(factor(k),LB.glob,fill = batch_f)) +
-    geom_bar(stat="identity", position=position_dodge()) +
+    ggplot(aes(k, LB.glob, fill = batch_f)) +
+    geom_bar(stat="identity", position = position_dodge(width = .8)) +
     geom_hline(yintercept=0.05, col="black", linetype = 2) + ylim(ylim) + 
+    geom_point(aes(col = batch_f), position = position_dodge(width = .8), shape = 15, size = 0.5) +
     theme(legend.position = "none", axis.text.x = element_text(angle=90)) +
     scale_x_discrete(labels=param.k) +
     scale_fill_manual(name = TeX("Batch effects ($\\kappa_\\mu, \\kappa_\\theta, \\kappa_{\\pi}$)"),
                       values=c("K1 (0, 0, 0)"  = "dodgerblue",
                                "K3 (1, 1, -1)" = "chartreuse3",
                                "K5 (1, -1, -1)" = "tomato1")) +
+    scale_color_manual(values=c("K1 (0, 0, 0)"  = "dodgerblue",
+                               "K3 (1, 1, -1)" = "chartreuse3",
+                               "K5 (1, -1, -1)" = "tomato1")) +
+    guides(col = FALSE) +
     xlab(expression("baseline (" * mu ~ ", " * theta * ", " * pi * ")")) +
     ylab("rejection rate") +
     facet_grid(cols = vars(perturbation_f), rows = vars(effect_f), labeller = label_parsed) +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> plb
   
-  ggsave(file = paste0("figure/LB_pert_size",size,".png"), plb, width = 20, height=12)
+  ggsave(file = paste0("figure/LB_pert_size",size,".png"), plb, width = 20, height = 12)
   plb
 }
 

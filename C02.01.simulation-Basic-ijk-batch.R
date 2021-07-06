@@ -7,6 +7,7 @@ source("F01.01.base.R")
 source("F02.01.simulation.R")
 source("F01.02.models-base.R")
 source("F01.02.models.R")
+source("F01.02.ANCOM.R")
 source("F01.02.summary.gamlss2.R")
 library(MAST)
 library(coin)
@@ -152,10 +153,11 @@ for (i in rng) {
     cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), ".\n")
     
     # do the tests on the ramdon ZINB distribution we created
-    result <- tester.set.HD.batch(data, n.gene=n.gene, suppressWarnWagner = TRUE, # if not suppressed, the slurm-out file size explodes.
-                                  LB.skip = F,LN.skip = F, MAST.skip = F,
-                                  KW.skip = F, Wg.skip = F, De2.skip = F, WRS.skip = (j != 1),
-                                  MGS.skip = (j != 1)) # if there are batch effects skip WRS and MGS.
+    result <- tester.set.HD.batch(data, n.gene=n.gene) 
+                                  # suppressWarnWagner = TRUE, # if not suppressed, the slurm-out file size explodes.
+                                  # LB.skip = F,LN.skip = F, MAST.skip = F,
+                                  # KW.skip = F, Wg.skip = F, De2.skip = F, WRS.skip = F,
+                                  # MGS.skip = F, ANCOM.skip = F, skip.cumulative = FALSE) # if there are batch effects skip WRS and MGS.
     result$nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
     result$pval.cdf <- 
       result$pval %>% apply(1, function(x) {
@@ -165,7 +167,8 @@ for (i in rng) {
     
   
     ### More MAST, DESeq2, MGS replicates (M = 10 in total)
-        result.MGS <- result.DS2ZI <- result.DS2 <- result.MAST <- list(coef = list(), pval = list())
+        result.MGS <- result.DS2ZI <- result.DS2 <- result.MAST <- 
+          result.ANCOM.sz <- result.ANCOM <- list(coef = list(), pval = list())
         
         result.MAST$coef[[1]] <- result$coef[c("MAST.nonz", "MAST.zero", "MAST.glob"), ]
         result.MAST$pval[[1]] <- result$pval[c("MAST.nonz", "MAST.zero", "MAST.glob"), ]
@@ -184,15 +187,25 @@ for (i in rng) {
         result.MGS$pval[[1]] <- result$pval["MGS", ]
         result.MGS$nonzero.prop[[1]] <- result$nonzero.prop
         
+        result.ANCOM.sz$coef[[1]] <- result$coef["ANCOM", ]
+        result.ANCOM.sz$pval[[1]] <- result$pval["ANCOM", ]
+        result.ANCOM.sz$nonzero.prop[[1]] <- result$nonzero.prop
+        
+        result.ANCOM$coef[[1]] <- result$coef["ANCOM", ]
+        result.ANCOM$pval[[1]] <- result$pval["ANCOM", ]
+        result.ANCOM$nonzero.prop[[1]] <- result$nonzero.prop
+        
         # empty shells for the rest of the replicates
         for (s in 2:M) {
           result.MAST$coef[[s]] <- 
             result.MAST$pval[[s]] <- 
             matrix(NA, 3, n.gene, dimnames = list(c("MAST.nonz", "MAST.zero", "MAST.glob"), NULL))
           result.DS2$coef[[s]] <- result.DS2$pval[[s]] <- result.DS2ZI$coef[[s]] <- 
-            result.DS2ZI$pval[[s]] <- result.MGS$coef[[s]] <- result.MGS$pval[[s]] <- rep(NA, n.gene)
+            result.DS2ZI$pval[[s]] <- result.MGS$coef[[s]] <- result.MGS$pval[[s]] <- 
+            result.ANCOM.sz$coef[[s]] <- result.ANCOM.sz$pval[[s]] <- 
+            result.ANCOM$coef[[s]] <- result.ANCOM$pval[[s]] <- rep(NA, n.gene)
         }
-        message("More MAST, MGS, DESeq2 replicates (s):\n")
+        message("More MAST, MGS, DESeq2, ANCOM replicates (s):\n")
         for (s in 2:M) {
           # # bookkeeping
           # if (file.exists(nm) & !ds.fatal) file.remove(nm)
@@ -226,7 +239,7 @@ for (i in rng) {
           result.MAST$coef[[s]][, index.filtered] <- tmp.MAST[[1]][1:3, ] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
           result.MAST$pval[[s]][, index.filtered] <- tmp.MAST[[2]][1:3, ] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
           result.MAST$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
-          
+
           print("DESeq2 -- vanilla")
           # if (!s %in% book.s$s) {
           # DS2 = switch(DS2.version, vanilla = DS2.vanilla, zinb = DS2.zinb)
@@ -236,7 +249,7 @@ for (i in rng) {
           result.DS2$coef[[s]][index.filtered] <- tmp.DS2[, "Estimate"] #coef.
           result.DS2$pval[[s]][index.filtered] <- tmp.DS2[, "pval"] #pval.
           result.DS2$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
-          
+
           print("DESeq2 -- zinbwave")
           DS2 = DS2.zinb
           tmp.DS2 <- try({DS2(data[, index.filtered.meta])})
@@ -248,13 +261,29 @@ for (i in rng) {
           # } else {
           #   ds.fatal = TRUE# otherwise it gives a fatal error, so this replicate is skipped.
           # }
-          
+
           print("MGS")
           tmp.MGS <- try({mgs(data[, index.filtered.meta])})
           if (class(tmp.MGS)[1] == "try-error") tmp.MGS = matrix(NA, ncol = 2)
           result.MGS$coef[[s]][index.filtered] <- tmp.MGS[, "Estimate"] #coef.
           result.MGS$pval[[s]][index.filtered] <- tmp.MGS[, "pval"] #pval.
           result.MGS$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+          
+          print("ANCOM with the structural zero rule")
+          tmp.ANC <- try({ANC(data[, index.filtered.meta], ignore.structural.zero = FALSE)})
+          if (class(tmp.ANC)[1] == "try-error") tmp.ANC = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
+          result.ANCOM.sz$coef[[s]][index.filtered] <- tmp.ANC[, "Estimate"] #coef.
+          result.ANCOM.sz$pval[[s]][index.filtered] <- tmp.ANC[, "pval"] #pval.
+          result.ANCOM.sz$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+          
+          print("ANCOM")
+          # tmp.ANC <- try({ANC(data[, index.filtered.meta])})
+          # if (class(tmp.ANC)[1] == "try-error") tmp.ANC = matrix(NA, ncol = 2, dimnames = list(NULL, c("Estimate", "pval")))
+          result.ANCOM$coef[[s]][index.filtered] <- tmp.ANC[, "Estimate"] #coef.
+          result.ANCOM$pval[[s]][index.filtered] <- tmp.ANC[, "pval"] #pval.
+          result.ANCOM$pval[[s]][is.infinite(result.ANCOM$coef[[s]])] <- NA
+          result.ANCOM$nonzero.prop[[s]] <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0, na.rm = TRUE))
+          
           gc()
         }
         
@@ -263,6 +292,8 @@ for (i in rng) {
         result$DS2   <- result.DS2
         result$DS2ZI <- result.DS2ZI
         result$MGS   <- result.MGS
+        result$ANCOM.sz <- result.ANCOM.sz
+        result$ANCOM <- result.ANCOM
         
         
         #### statistics
@@ -299,6 +330,8 @@ for (i in rng) {
           result$pval.cdf["DS2", ] <- result$DS2$pval %>% Reduce(c, .) %>% {if (all(is.na(.))) NA else ecdf(.)(cdf.cutoff)}
           result$pval.cdf["DS2ZI", ] <- result$DS2ZI$pval %>% Reduce(c, .) %>% {if (all(is.na(.))) NA else ecdf(.)(cdf.cutoff)}
           result$pval.cdf["MGS", ] <- result$MGS$pval %>% Reduce(c, .) %>% {if (all(is.na(.))) NA else ecdf(.)(cdf.cutoff)}
+          result$pval.cdf["ANCOM.sz", ] <- result$ANCOM.sz$pval %>% Reduce(c, .) %>% {if (all(is.na(.))) NA else ecdf(.)(cdf.cutoff)}
+          result$pval.cdf["ANCOM", ] <- result$ANCOM$pval %>% Reduce(c, .) %>% {if (all(is.na(.))) NA else ecdf(.)(cdf.cutoff)}
           
           
     # 3. Statistics
@@ -376,6 +409,40 @@ for (i in rng) {
     
     stat.na.prop["DS2"] <-
       result$DS2$pval %>% 
+      sapply( function(x)  {mean(is.na(x))}) %>%
+      mean(na.rm = TRUE)
+    gc()
+    
+    
+    stat.power["ANCOM.sz"] <-
+      result$ANCOM.sz$pval %>% 
+      sapply( function(x) {ifelse(mean(is.na(x)) >= cutoff, NA, mean(x<=sig, na.rm=TRUE))}) %>%
+      mean(na.rm = TRUE)  # vector of three
+    
+    stat.irregular["ANCOM.sz"] <- #stat based on NA p-val = 1.
+      result$ANCOM.sz$pval %>% 
+      sapply(function(x)  {mean(ifelse(is.na(x), 1, x)<=sig, na.rm=TRUE)}) %>%
+      mean(na.rm = TRUE)
+    
+    stat.na.prop["ANCOM.sz"] <-
+      result$ANCOM.sz$pval %>% 
+      sapply( function(x)  {mean(is.na(x))}) %>%
+      mean(na.rm = TRUE)
+    gc()
+    
+    
+    stat.power["ANCOM"] <-
+      result$ANCOM$pval %>% 
+      sapply( function(x) {ifelse(mean(is.na(x)) >= cutoff, NA, mean(x<=sig, na.rm=TRUE))}) %>%
+      mean(na.rm = TRUE)  # vector of three
+    
+    stat.irregular["ANCOM"] <- #stat based on NA p-val = 1.
+      result$ANCOM$pval %>% 
+      sapply(function(x)  {mean(ifelse(is.na(x), 1, x)<=sig, na.rm=TRUE)}) %>%
+      mean(na.rm = TRUE)
+    
+    stat.na.prop["ANCOM"] <-
+      result$ANCOM$pval %>% 
       sapply( function(x)  {mean(is.na(x))}) %>%
       mean(na.rm = TRUE)
     gc()
