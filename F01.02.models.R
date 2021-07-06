@@ -750,7 +750,7 @@ ANC <- function(data, ignore.structural.zero = FALSE) {
                                meta.data = cbind(ID = rownames(data), data[, -col.otu]), 
                                sample.var = "ID", group.var = "phenotype", 
                                zero.cut = 1, # This is ignored as we use the already-filtered data
-                               lib.cut = 1000, # This may not play a role as well by design.
+                               #lib.cut = 100, # This may not play a role as well by design.
                                neg.lb = FALSE)
   out.ancom = 
     ANCOM_BC (feature.table = pre.process$feature.table, grp.name = pre.process$group.name, 
