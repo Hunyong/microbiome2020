@@ -81,7 +81,10 @@ for (j in 1:5) {
     save_file.stat = paste0("output/stat-n", n, "-pert", perturb, "-", model, "-", i, ".", j, ".", k, ".rds")
     read_file.stat = gsub("output", "output_wo_ANCOM", save_file.stat)
     
-    if (!file.exists(read_file.stat)) stop(sprintf("%s does not exist.", read_file.stat))
+    if (!file.exists(read_file.stat)) {
+      write.csv(0, sprintf("Does_not_exist_n%s-pert%s-%s-%s.%s.%s.csv", n, perturb, model, i, j, k))
+      stop(sprintf("%s does not exist.", read_file.stat))
+    }
     if (!dir.exists(save_path)) {message("No output folder detected. Creating one."); dir.create(save_path)}
     if (file.exists(save_file.stat)) {
       # # bookkeeping
