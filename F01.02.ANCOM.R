@@ -6,7 +6,7 @@
 
 # Data Pre-Processing
 feature_table_pre_process = function(feature.table, meta.data, sample.var, group.var, 
-                                     zero.cut = 0.90, lib.cut = 1000, neg.lb){
+                                     zero.cut = 0.90, lib.cut = 100, neg.lb){
   feature.table = data.frame(feature.table, check.names = FALSE)
   meta.data = data.frame(meta.data, check.names = FALSE)
   # Drop unused levels

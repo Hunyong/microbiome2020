@@ -742,6 +742,7 @@ mgs <- function(data) {
 }
 
 ANC <- function(data, ignore.structural.zero = FALSE) {
+  require(nloptr)
   col.otu = which(grepl("^y", names(data)))
   y.names = colnames(data)[col.otu]
   pre.process = 
