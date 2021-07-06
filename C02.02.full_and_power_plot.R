@@ -33,17 +33,19 @@ fullplot <- function(size, model, res.tmp = TRUE) # res.tmp being globally assig
           mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
                   "i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),
                   "effect" = as.character(result$setting$delta[4])) %>%
-          dplyr::select(LB, LN, MAST, KW, `KW-II`, DS2, `DS2ZI`, MGS, i, j, k, batch_f, effect)
+          dplyr::select(LB, LN, MAST, KW, `KW-II`, DS2, `DS2ZI`, MGS, 
+                        ANCOM.sz, ANCOM, i, j, k, batch_f, effect)
         
         res <- rbind(res,tmp[1,])
       }
     }
   }
-  res <- res %>% gather(key = "method", value = "p.value",`LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
+  res <- res %>% gather(key = "method", value = "p.value",`LB`,`LN`,`MAST`,`KW`,
+                        `KW-II`,`DS2`, `DS2ZI`, `MGS`, `ANCOM.sz`, `ANCOM`)
   
   res$method_f = factor(res$method,
-                             levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"),
-                             labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"))
+                             levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM.sz", "ANCOM"),
+                             labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOMsz", "ANCOM"))
   res$effect_f = factor(res$effect,
                              levels = c("Effect_null", "Effect_mu(D>H)", 
                                         "Effect_theta(D>H)", "Effect_pi(D<H)",
@@ -72,7 +74,8 @@ fullplot <- function(size, model, res.tmp = TRUE) # res.tmp being globally assig
                                        "K4 (0.5, -0.5, -0.5)",
                                        "K5 (1, -1, -1)"))
 # res.tmp <<- res
-  res[res$method == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
+  res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz") 
+      & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
   res$k <- factor(res$k)
   if (res.tmp) res.tmp <<- res
   res %>%
@@ -205,7 +208,8 @@ powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE,
                   "i" = i,"j" = j,"k" = k,
                   "batch" = as.character(result$setting$kappa[4]),
                   "effect" = as.character(result$setting$delta[4]))%>%
-          dplyr::select("LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "i","j","k","batch","effect")
+          dplyr::select("LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", 
+                        "ANCOM", "i","j","k","batch","effect")
         
         res <- rbind(res,tmp[1,])
       }
@@ -217,12 +221,13 @@ powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE,
     gather(key = "method", value = "p.value",
            `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
   res$method_f = factor(res$method,
-                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"),
-                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"))
+                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"),
+                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"))
   res$batch_f = factor(res$batch, levels = batch.levels, labels = batch.labels)
   res$effect_f = factor(res$effect, levels = disease.levels, labels = disease.labels)
   if (!delta.base) res$effect2_f = factor(res$effect, levels = disease.levels, labels = disease2.labels)
-  res[res$method == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
+  res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz") 
+      & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
   res$k <- factor(res$k)
   if (res.tmp) res.tmp <<- res  
   
@@ -345,7 +350,8 @@ powercurve <- function(model,  width = 12,  height = 9,
                       n = size, i = i, j = j, k = k,
                       "batch" = as.character(result$setting$kappa[4]),
                       "effect" = as.character(result$setting$delta[4])) %>%
-              dplyr::select(cutoff, "LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", 
+              dplyr::select(cutoff, "LB", "LN", "MAST", "KW", "KW-II", "DS2", 
+                            "DS2ZI", "MGS", "ANCOM",
                             n, i, j, k, batch, effect)
           } else {
             tmp <- NULL
@@ -361,8 +367,8 @@ powercurve <- function(model,  width = 12,  height = 9,
     gather(key = "method", value = "rejection.rate",
                   `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
   res$method_f = factor(res$method,
-                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"),
-                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"))
+                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"),
+                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"))
   res$batch_f = factor(res$batch, levels = batch.levels, labels = batch.labels)
   res$effect_f = factor(res$effect, levels = disease.levels, labels = disease.labels)
   # res$effect2_f = factor(res$effect, levels = disease.levels, labels = disease2.labels)
@@ -372,7 +378,7 @@ powercurve <- function(model,  width = 12,  height = 9,
   # grid points for dots, different x-values for each method.
   res.points = 
     res %>% 
-    dplyr::filter(((cutoff * 100) %% 8) == {as.numeric(method_f) %% 8} )
+    dplyr::filter(((cutoff * 100) %% 9) == {as.numeric(method_f) %% 9} )
 tmp.p <<- res.points
   # res[res$method == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
   if (res.tmp) res.tmp <<- res
@@ -387,10 +393,10 @@ tmp.p <<- res.points
     ylim(c(0,1)) + 
     # xlim(c(0,1)) + 
     scale_x_continuous(breaks = c(0, 0.03, 0.05, 0.10, 0.15, 0.2), limits = c(0, 0.2)) +
-    scale_shape_manual(values = c(LN = 16, LB = 3, MAST = 1, KW = 18, `KW-II` = 3, DS2 = 8, `DS2ZI` = 3, MGS = 3)) +
-    scale_linetype_manual(values = c(LN = 1, LB = 3, MAST = 1, KW = 1, `KW-II` = 3, DS2 = 1, `DS2ZI` = 3, MGS = 1)) +
+    scale_shape_manual(values = c(LN = 16, LB = 3, MAST = 1, KW = 18, `KW-II` = 3, DS2 = 8, `DS2ZI` = 3, MGS = 3, ANCOM = 16)) +
+    scale_linetype_manual(values = c(LN = 1, LB = 3, MAST = 1, KW = 1, `KW-II` = 3, DS2 = 1, `DS2ZI` = 3, MGS = 1, ANCOM = 3)) +
     scale_color_manual(values = c(LN = "firebrick", LB = "firebrick", MAST = "darkseagreen4", KW = "darkorchid3", `KW-II` = "darkorchid3", 
-                                  DS2 = "dodgerblue3", `DS2ZI` = "dodgerblue3", MGS = "goldenrod3")) +
+                                  DS2 = "dodgerblue3", `DS2ZI` = "dodgerblue3", MGS = "goldenrod3", ANCOM = "goldenrod3" )) +
     guides(fill = FALSE, col = guide_legend(nrow = 1, title = NULL), 
            shape = guide_legend(nrow = 1, title = NULL), linetype = guide_legend(nrow = 1, title = NULL)) +
     xlab("cut-off values") +

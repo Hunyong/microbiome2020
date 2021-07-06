@@ -42,11 +42,12 @@ reducedplot <- function(model) {
   }
   # 
 # res.tmp <<- res3
-  res3 <- res3 %>% gather(key = "method", value = "p.value",`LB`,`LN`,`MAST`,`KW`,`KW-II`, `DS2`, `DS2ZI`, `MGS`)
+  res3 <- res3 %>% gather(key = "method", value = "p.value",
+                          `LB`,`LN`,`MAST`,`KW`,`KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`)
   res3[res3$method == "MGS" & res3$j != 1, "p.value"] <- NA #NA for MGS with batch effects
   res3$method_f = factor(res3$method,
-                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"),
-                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS"))
+                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"),
+                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"))
   res3$batch_f = factor(res3$batch,
                         levels = c("no batch effect", 
                                    "large(+,+,-) batch effect",
