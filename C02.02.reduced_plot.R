@@ -30,7 +30,8 @@ reducedplot <- function(model) {
                                         "i" = i,"j" = j,"k" = k,"size"=size,
                                         "batch" = as.character(result$setting$kappa[4]),
                                         "effect" = as.character(result$setting$delta[4])) %>%
-            dplyr::select("LB","LN","MAST","KW","KW-II","DS2", "DS2ZI", "MGS", "i","j","k","batch","effect","size")
+            dplyr::select("LB","LN","MAST","KW","KW-II","DS2", "DS2ZI", "MGS", "ANCOM",
+                          "i","j","k","batch","effect","size")
         } else {
           tmp <- NULL
           cat("(Not available!) ")
