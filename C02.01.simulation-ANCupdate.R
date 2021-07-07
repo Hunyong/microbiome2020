@@ -67,7 +67,8 @@ for (j in 1:5) {
                       dim(delta1)[1], 10)  #n = both
   cat("Do k upto ", j.terminal, "\n")
 
-  if (i == 0) rng = 1:j.terminal else rng = i:j.terminal
+  # if (i == 0) rng = 1:j.terminal else rng = i:j.terminal
+  if (i == 0) rng = 1:10
   for (i in rng) {
     
     

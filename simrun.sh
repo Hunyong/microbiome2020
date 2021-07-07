@@ -13,23 +13,23 @@ for l in 3; do # ZILN
   done; 
 done;
 
-# extra after the core is done
-for i in {1..10}; do
-for l in {1..3}; do # ZINB, ZIG, ZILN
-  for j in {1..5}; do 
-    for k in {1..54}; do
-      sbatch --time=10:00:00 --mem 10000 2run-code.sh $i $j $k $l 5 80;
-      sbatch --time=40:00:00 --mem 10000  2run-code.sh $i $j $k $l 5 400; 
-      if [[ "$l" = 3 ]]; then
-        sbatch --time=10:00:00 --mem 10000  2run-code.sh $i $j $k $l 2.5 80;
-        sbatch --time=40:00:00 --mem 10000  2run-code.sh $i $j $k $l 2.5 400;
-        sbatch --time=10:00:00 --mem 10000  2run-code.sh $i $j $k $l 0 80;
-        sbatch --time=40:00:00 --mem 10000  2run-code.sh $i $j $k $l 0 400;
-      fi;
-    done; 
-  done; 
-done;
-done;
+# # extra after the core is done
+# for i in {1..10}; do
+# for l in {1..3}; do # ZINB, ZIG, ZILN
+#   for j in {1..5}; do 
+#     for k in {1..54}; do
+#       sbatch --time=10:00:00 --mem 10000 2run-code.sh $i $j $k $l 5 80;
+#       sbatch --time=40:00:00 --mem 10000  2run-code.sh $i $j $k $l 5 400; 
+#       if [[ "$l" = 3 ]]; then
+#         sbatch --time=10:00:00 --mem 10000  2run-code.sh $i $j $k $l 2.5 80;
+#         sbatch --time=40:00:00 --mem 10000  2run-code.sh $i $j $k $l 2.5 400;
+#         sbatch --time=10:00:00 --mem 10000  2run-code.sh $i $j $k $l 0 80;
+#         sbatch --time=40:00:00 --mem 10000  2run-code.sh $i $j $k $l 0 400;
+#       fi;
+#     done; 
+#   done; 
+# done;
+# done;
 
 # extra after the core is done
 for l in {1..3}; do # ZINB, ZIG, ZILN
