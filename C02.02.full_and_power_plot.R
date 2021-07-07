@@ -365,7 +365,7 @@ powercurve <- function(model,  width = 12,  height = 9,
   
   res <- res %>% 
     gather(key = "method", value = "rejection.rate",
-                  `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
+                  `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`, `ANCOM`)
   res$method_f = factor(res$method,
                          levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"),
                          labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"))
@@ -380,7 +380,7 @@ powercurve <- function(model,  width = 12,  height = 9,
     res %>% 
     dplyr::filter(((cutoff * 100) %% 9) == {as.numeric(method_f) %% 9} )
 tmp.p <<- res.points
-  # res[res$method == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
+  res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz") & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
   if (res.tmp) res.tmp <<- res
   # res %>%
   res %>% 
