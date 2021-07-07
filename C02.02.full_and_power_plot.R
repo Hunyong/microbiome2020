@@ -219,7 +219,7 @@ powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE,
   
   res <- res %>% 
     gather(key = "method", value = "p.value",
-           `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`)
+           `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`, `ANCOM`)
   res$method_f = factor(res$method,
                          levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"),
                          labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"))
