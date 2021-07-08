@@ -117,20 +117,20 @@ fullplot <- function(size, model, res.tmp = TRUE, stop.if.absent = TRUE) # res.t
 }
 
 #width = 32, height = 16
-pn1 <- fullplot(80,model="ziln")
+pn1 <- fullplot(80, model="ziln", stop.if.absent = FALSE)
 ggsave(file="figure/ziln_full_size80.png", pn1, width = 30, height = 24)
-pn2 <- fullplot(400, model="ziln")
+pn2 <- fullplot(400, model="ziln", stop.if.absent = FALSE)
 ggsave(file="figure/ziln_full_size400.png", pn2, width = 30, height = 24)
 
 
-p1 <- fullplot(80, model="zinb")
+p1 <- fullplot(80, model="zinb", stop.if.absent = FALSE)
 ggsave(file="figure/zinb_full_size80.png", p1, width = 30, height = 24)
-p2 <- fullplot(400, model="zinb")
+p2 <- fullplot(400, model="zinb", stop.if.absent = FALSE)
 ggsave(file="figure/zinb_full_size400.png", p2, width = 30, height = 24)
 
-pp1 <- fullplot(80, model="zig")
+pp1 <- fullplot(80, model="zig", stop.if.absent = FALSE)
 ggsave(file="figure/zig_full_size80.png", pp1, width = 30, height = 24)
-pp2 <- fullplot(400, model="zig")
+pp2 <- fullplot(400, model="zig", stop.if.absent = FALSE)
 ggsave(file="figure/zig_full_size400.png", pp2, width = 30, height = 24)
 
 
@@ -278,17 +278,17 @@ powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE,
 
 # modify to add the head points!!!!
 
-powerplot(model = "ziln", size = 400)
-powerplot(model = "ziln", size = 80)
-powerplot(model = "ziln", size = 80, include.null = TRUE)
-powerplot(model = "ziln", size = 400, delta.base = FALSE) # disease effect sensitivity analysis
-powerplot(model = "ziln", size = 80, delta.base = FALSE) # disease effect sensitivity analysis
+powerplot(model = "ziln", size = 400, stop.if.absent = FALSE)
+powerplot(model = "ziln", size = 80, stop.if.absent = FALSE)
+powerplot(model = "ziln", size = 80, include.null = TRUE, stop.if.absent = FALSE)
+powerplot(model = "ziln", size = 400, delta.base = FALSE, stop.if.absent = FALSE) # disease effect sensitivity analysis
+powerplot(model = "ziln", size = 80, delta.base = FALSE, stop.if.absent = FALSE) # disease effect sensitivity analysis
 
-powerplot(model = "zig", size = 400)
-powerplot(model = "zig", size = 80)
+powerplot(model = "zig", size = 400, stop.if.absent = FALSE)
+powerplot(model = "zig", size = 80, stop.if.absent = FALSE)
 
-powerplot(model = "zinb", size = 400)
-powerplot(model = "zinb", size = 80)
+powerplot(model = "zinb", size = 400, stop.if.absent = FALSE)
+powerplot(model = "zinb", size = 80, stop.if.absent = FALSE)
 
 
 powercurve <- function(model,  width = 12,  height = 9,
@@ -421,4 +421,4 @@ tmp.p <<- res.points
   ggsave(file = fn, p, width = width, height= height)
   p
 }
-powercurve(model = "ziln")
+powercurve(model = "ziln", stop.if.absent = FALSE)

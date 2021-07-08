@@ -76,7 +76,7 @@ reducedplot <- function(model) {
     theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", 
           axis.text.x = element_text(angle=90)) -> p
   
-  ggsave(file = paste0("figure/", model,"_null_size.png"), p, width = 5, height=6)
+  ggsave(file = paste0("figure/", model,"_null_size.png"), p, width = 5, height=7)
   p
 }
 
