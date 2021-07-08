@@ -50,8 +50,8 @@ fullplot <- function(size, model, res.tmp = TRUE, stop.if.absent = TRUE) # res.t
                         `KW-II`,`DS2`, `DS2ZI`, `MGS`, `ANCOM.sz`, `ANCOM`)
   
   res$method_f = factor(res$method,
-                             levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM.sz", "ANCOM"),
-                             labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOMsz", "ANCOM"))
+                             levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM.sz", "ANCOM", "KW", "KW-II"),
+                             labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOMsz", "ANCOM", "KW", "KW-II"))
   res$effect_f = factor(res$effect,
                              levels = c("Effect_null", "Effect_mu(D>H)", 
                                         "Effect_theta(D>H)", "Effect_pi(D<H)",
@@ -233,8 +233,8 @@ powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE,
     gather(key = "method", value = "p.value",
            `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`, `ANCOM`)
   res$method_f = factor(res$method,
-                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"),
-                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"))
+                         levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II"),
+                         labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II"))
   res$batch_f = factor(res$batch, levels = batch.levels, labels = batch.labels)
   res$effect_f = factor(res$effect, levels = disease.levels, labels = disease.labels)
   if (!delta.base) res$effect2_f = factor(res$effect, levels = disease.levels, labels = disease2.labels)
@@ -381,8 +381,8 @@ powercurve <- function(model,  width = 12,  height = 9,
     gather(key = "method", value = "rejection.rate",
                   `LB`,`LN`,`MAST`,`KW`,`KW-II`,`DS2`, `DS2ZI`, `MGS`, `ANCOM`)
   res$method_f = factor(res$method,
-                         levels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"),
-                         labels = c("LN", "LB", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", "ANCOM"))
+                         levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II"),
+                         labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II"))
   res$batch_f = factor(res$batch, levels = batch.levels, labels = batch.labels)
   res$effect_f = factor(res$effect, levels = disease.levels, labels = disease.labels)
   # res$effect2_f = factor(res$effect, levels = disease.levels, labels = disease2.labels)
