@@ -3,7 +3,7 @@ library(latex2exp)
 library(ggh4x) # for nested facetting
 source("C01.02.simulation.setup.R")
 
-fullplot <- function(size, model, res.tmp = TRUE) # res.tmp being globally assigned
+fullplot <- function(size, model, res.tmp = TRUE, stop.if.absent = TRUE) # res.tmp being globally assigned
 {
   
   parameter = switch(model, 
@@ -25,18 +25,24 @@ fullplot <- function(size, model, res.tmp = TRUE) # res.tmp being globally assig
       for(k in 1:k.index)
       {
         cat(k , " ")
-        result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
-        result.stat <- data.frame(result$stat)
-        
-        tmp <- 
-          result.stat %>% 
-          mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
-                  "i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),
-                  "effect" = as.character(result$setting$delta[4])) %>%
-          dplyr::select(LB, LN, MAST, KW, `KW-II`, DS2, `DS2ZI`, MGS, 
-                        ANCOM.sz, ANCOM, i, j, k, batch_f, effect)
-        
-        res <- rbind(res,tmp[1,])
+        fn.tmp <- paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds")
+        if (file.exists(fn.tmp)) {
+          result <- readRDS(fn.tmp)
+          result.stat <- data.frame(result$stat)
+          tmp <- 
+            result.stat %>% 
+            mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
+                    "i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),
+                    "effect" = as.character(result$setting$delta[4])) %>%
+            dplyr::select(LB, LN, MAST, KW, `KW-II`, DS2, `DS2ZI`, MGS, 
+                          ANCOM.sz, ANCOM, i, j, k, batch_f, effect)
+          
+          res <- rbind(res,tmp[1,])
+          
+        } else {
+          if (stop.if.absent) stop("Not available")
+          cat("(Not available) ")
+        }
       }
     }
   }
@@ -133,7 +139,7 @@ ggsave(file="figure/zig_full_size400.png", pp2, width = 30, height = 24)
 powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE, 
                       fn = paste0("figure/",  model, "_power_size", size,  if (!delta.base) "_effectSize(no_batch)",  
                                   if (include.null) "_with_null",  ".png"),
-                      res.tmp = TRUE, include.null = FALSE)
+                      res.tmp = TRUE, include.null = FALSE, stop.if.absent = TRUE)
 {
   require(tidyr)
   parameter = switch(model,  
@@ -199,19 +205,25 @@ powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE,
       for(k in k.index)
       {
         cat(k, " ")
-        result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
-        result.stat <- data.frame(result$stat)
-        
-        tmp <- 
-          result.stat%>% 
-          mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
-                  "i" = i,"j" = j,"k" = k,
-                  "batch" = as.character(result$setting$kappa[4]),
-                  "effect" = as.character(result$setting$delta[4]))%>%
-          dplyr::select("LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", 
-                        "ANCOM", "i","j","k","batch","effect")
-        
-        res <- rbind(res,tmp[1,])
+        fn.tmp <- paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds")
+        if (file.exists(fn.tmp)) {
+          result <- readRDS(fn.tmp)
+          result.stat <- data.frame(result$stat)
+          
+          tmp <- 
+            result.stat%>% 
+            mutate ("LB" = LB.glob, "MAST" = MAST.glob, "KW-II" = Wg.glob,
+                    "i" = i,"j" = j,"k" = k,
+                    "batch" = as.character(result$setting$kappa[4]),
+                    "effect" = as.character(result$setting$delta[4]))%>%
+            dplyr::select("LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS", 
+                          "ANCOM", "i","j","k","batch","effect")
+          
+          res <- rbind(res,tmp[1,])
+        } else {
+          if (stop.if.absent) stop("Not available")
+          cat("(Not available) ")
+        }
       }
     }
   }
@@ -280,7 +292,8 @@ powerplot(model = "zinb", size = 80)
 
 
 powercurve <- function(model,  width = 12,  height = 9,
-                       fn = paste0("figure/", model,"_power_curve", ".png"), res.tmp = TRUE)
+                       fn = paste0("figure/", model,"_power_curve", ".png"), res.tmp = TRUE,
+                       stop.if.absent = TRUE)
 {
   parameter = switch(model, 
                      zinb = parameterNB, 
@@ -353,10 +366,11 @@ powercurve <- function(model,  width = 12,  height = 9,
               dplyr::select(cutoff, "LB", "LN", "MAST", "KW", "KW-II", "DS2", 
                             "DS2ZI", "MGS", "ANCOM",
                             n, i, j, k, batch, effect)
+            res <- rbind(res, tmp)
           } else {
-            tmp <- NULL
+            if (stop.if.absent) stop("Not available")
+            cat("(Not available) ")
           }
-          res <- rbind(res, tmp)
         }
       }
     }
