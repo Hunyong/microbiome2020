@@ -64,7 +64,7 @@ LBplot <- function(model,size)
     facet_grid(rows = vars(method_f)) +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")-> p
   
-  ggsave(file = paste0(model,"_LB_size",size,".png"), p, width = 10, height=12)
+  ggsave(file = paste0(model,"_LB_size",size,".pdf"), p, width = 10, height=12)
   
   p
 }
