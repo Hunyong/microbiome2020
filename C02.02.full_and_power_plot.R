@@ -118,27 +118,27 @@ fullplot <- function(size, model, res.tmp = TRUE, stop.if.absent = TRUE) # res.t
 
 #width = 32, height = 16
 pn1 <- fullplot(80, model="ziln", stop.if.absent = FALSE)
-ggsave(file="figure/ziln_full_size80.png", pn1, width = 30, height = 24)
+ggsave(file="figure/ziln_full_size80.pdf", pn1, width = 30, height = 24)
 pn2 <- fullplot(400, model="ziln", stop.if.absent = FALSE)
-ggsave(file="figure/ziln_full_size400.png", pn2, width = 30, height = 24)
+ggsave(file="figure/ziln_full_size400.pdf", pn2, width = 30, height = 24)
 
 
 p1 <- fullplot(80, model="zinb", stop.if.absent = FALSE)
-ggsave(file="figure/zinb_full_size80.png", p1, width = 30, height = 24)
+ggsave(file="figure/zinb_full_size80.pdf", p1, width = 30, height = 24)
 p2 <- fullplot(400, model="zinb", stop.if.absent = FALSE)
-ggsave(file="figure/zinb_full_size400.png", p2, width = 30, height = 24)
+ggsave(file="figure/zinb_full_size400.pdf", p2, width = 30, height = 24)
 
 pp1 <- fullplot(80, model="zig", stop.if.absent = FALSE)
-ggsave(file="figure/zig_full_size80.png", pp1, width = 30, height = 24)
+ggsave(file="figure/zig_full_size80.pdf", pp1, width = 30, height = 24)
 pp2 <- fullplot(400, model="zig", stop.if.absent = FALSE)
-ggsave(file="figure/zig_full_size400.png", pp2, width = 30, height = 24)
+ggsave(file="figure/zig_full_size400.pdf", pp2, width = 30, height = 24)
 
 
 ####power plot####
 
 powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE, 
                       fn = paste0("figure/",  model, "_power_size", size,  if (!delta.base) "_effectSize(no_batch)",  
-                                  if (include.null) "_with_null",  ".png"),
+                                  if (include.null) "_with_null",  ".pdf"),
                       res.tmp = TRUE, include.null = FALSE, stop.if.absent = TRUE)
 {
   require(tidyr)
@@ -291,7 +291,7 @@ powerplot(model = "zinb", size = 80, stop.if.absent = FALSE)
 
 
 powercurve <- function(model,  width = 12,  height = 9,
-                       fn = paste0("figure/", model,"_power_curve", ".png"), res.tmp = TRUE,
+                       fn = paste0("figure/", model,"_power_curve", ".pdf"), res.tmp = TRUE,
                        stop.if.absent = TRUE)
 {
   parameter = switch(model, 
