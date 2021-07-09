@@ -80,8 +80,8 @@ fullplot <- function(size, model, res.tmp = TRUE, stop.if.absent = TRUE) # res.t
                                        "K4 (0.5, -0.5, -0.5)",
                                        "K5 (1, -1, -1)"))
 # res.tmp <<- res
-  res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz") 
-      & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
+  # res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz") 
+  #     & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
   res$k <- factor(res$k)
   if (res.tmp) res.tmp <<- res
   res %>%
@@ -227,7 +227,6 @@ powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE,
       }
     }
   }
-  res[res$method_f == "MGS" & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
   
   res <- res %>% 
     gather(key = "method", value = "p.value",
@@ -238,8 +237,8 @@ powerplot <- function(model, size,  width = 12,  height = 8,  delta.base = TRUE,
   res$batch_f = factor(res$batch, levels = batch.levels, labels = batch.labels)
   res$effect_f = factor(res$effect, levels = disease.levels, labels = disease.labels)
   if (!delta.base) res$effect2_f = factor(res$effect, levels = disease.levels, labels = disease2.labels)
-  res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz") 
-      & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
+  # res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz") 
+  #     & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
   res$k <- factor(res$k)
   if (res.tmp) res.tmp <<- res  
   
@@ -394,7 +393,7 @@ powercurve <- function(model,  width = 12,  height = 9,
     res %>% 
     dplyr::filter(((cutoff * 100) %% 9) == {as.numeric(method_f) %% 9} )
 tmp.p <<- res.points
-  res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz") & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
+  # res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz") & res$j != 1, "p.value"] <- NA #NA for MGS with batch effects
   if (res.tmp) res.tmp <<- res
   # res %>%
   res %>% 
