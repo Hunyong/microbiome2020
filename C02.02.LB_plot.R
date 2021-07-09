@@ -2,8 +2,7 @@ library(tidyverse)
 library(latex2exp)
 source("C01.02.simulation.setup.R")
 
-LBplot <- function(model,size)
-{
+LBplot <- function(model, size, stop.if.absent = TRUE) {
   j.index <- c(1,5,3)
   k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
   parameter = switch(model, 
@@ -18,12 +17,18 @@ LBplot <- function(model,size)
   {
     for(k in k.index)
     {
-      result <- readRDS(paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds"))
-      result.stat <- data.frame(result$stat)
-      
-      tmp <- result.stat%>% mutate ("i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),"effect" = as.character(result$setting$delta[4]))%>%dplyr::select("LB.nonz","LB.zero","LB.glob","LB.min","i","j","k","batch_f","effect")
-      
-      res <- rbind(res,tmp[1,])
+      fn.tmp <- paste0("output/stat-n",size,"-pert0.5-",model,"-",i,".",j,".",k,".rds")
+      if (file.exists(fn.tmp)) {
+        result <- readRDS(fn.tmp)
+        result.stat <- data.frame(result$stat)
+        
+        tmp <- result.stat%>% mutate ("i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),"effect" = as.character(result$setting$delta[4]))%>%dplyr::select("LB.nonz","LB.zero","LB.glob","LB.min","i","j","k","batch_f","effect")
+        
+        res <- rbind(res,tmp[1,])
+      } else {
+        if (stop.if.absent) stop("Not available")
+        cat("(Not available) ")
+      }
     }
   }
   
@@ -68,12 +73,11 @@ LBplot <- function(model,size)
   
   p
 }
-LBplot(model = "ziln",size =400)
 
-LBplot(model = "ziln",size =80)
-
-LBplot(model = "zig",size =400)
-LBplot(model = "zig",size =80)
-LBplot(model = "zinb",size =400)
-LBplot(model = "zinb",size =80)
+LBplot(model = "ziln", size = 400, stop.if.absent = FALSE)
+LBplot(model = "ziln", size = 80, stop.if.absent = FALSE)
+LBplot(model = "zig", size = 400, stop.if.absent = FALSE)
+LBplot(model = "zig", size = 80, stop.if.absent = FALSE)
+LBplot(model = "zinb", size = 400, stop.if.absent = FALSE)
+LBplot(model = "zinb", size = 80, stop.if.absent = FALSE)
   

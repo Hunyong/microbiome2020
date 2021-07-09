@@ -2,7 +2,7 @@ library(tidyverse)
 library(latex2exp)
 source("C01.02.simulation.setup.R")
 
-pertplot <- function(model= "ziln", size, res.tmp = TRUE)
+pertplot <- function(model= "ziln", size, res.tmp = TRUE, stop.if.absent = TRUE)
 {
   j.index <- c(1,5,3)
   k.index = c(7,9,10,12,25,27,28,30,43,45,46,48)
@@ -22,12 +22,18 @@ pertplot <- function(model= "ziln", size, res.tmp = TRUE)
       {
         for(k in k.index)
         {
-          result <- readRDS(paste0("output/stat-n",size,"-pert",pe,"-ziln-",i,".",j,".",k,".rds"))
-          result.stat <- data.frame(result$stat)
-          
-          tmp <- result.stat%>% mutate ("i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),"effect" = as.character(result$setting$delta[4]),"pert"=pe)%>%dplyr::select("LB.glob","i","j","k","batch_f","effect","pert")
-          
-          res <- rbind(res,tmp[1,])
+          fn.tmp <- paste0("output/stat-n",size,"-pert",pe,"-ziln-",i,".",j,".",k,".rds")
+          if (file.exists(fn.tmp)) {
+            result <- readRDS(fn.tmp)
+            result.stat <- data.frame(result$stat)
+            
+            tmp <- result.stat%>% mutate ("i" = i,"j" = j,"k" = k,"batch_f" = as.character(result$setting$kappa[4]),"effect" = as.character(result$setting$delta[4]),"pert"=pe)%>%dplyr::select("LB.glob","i","j","k","batch_f","effect","pert")
+            
+            res <- rbind(res,tmp[1,])
+          } else {
+            if (stop.if.absent) stop("Not available")
+            cat("(Not available) ")
+          }
         }
       }
     }
@@ -78,9 +84,9 @@ pertplot <- function(model= "ziln", size, res.tmp = TRUE)
     facet_grid(cols = vars(perturbation_f), rows = vars(effect_f), labeller = label_parsed) +
     theme(plot.title = element_text(hjust = 0.5), legend.position="bottom")  -> plb
   
-  ggsave(file = paste0("figure/LB_pert_size",size,".png"), plb, width = 20, height = 12)
+  ggsave(file = paste0("figure/LB_pert_size",size,".pdf"), plb, width = 20, height = 12)
   plb
 }
 
-pertplot(model= "ziln", size = 80)
-pertplot(model= "ziln", size = 400)
+pertplot(model= "ziln", size = 80, stop.if.absent = FALSE)
+pertplot(model= "ziln", size = 400, stop.if.absent = FALSE)
