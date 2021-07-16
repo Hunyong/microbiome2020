@@ -2,6 +2,9 @@
 library(xtable);
 library(scatterplot3d)
 library(cowplot)
+library(dplyr)
+library(latex2exp)
+library(ggplot2)
 nrm = "tpm5"
 zoe = 2 # zoe = "IBD"
 zoe.nm = if (zoe %in% 1:2) paste0("_zoe", zoe) else "_NEWDATA"
