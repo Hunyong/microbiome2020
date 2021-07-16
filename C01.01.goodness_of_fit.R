@@ -1,19 +1,20 @@
 ### 0.1 library
 library(dplyr); library(magrittr); library(ggplot2); library(gridExtra)
-library(gamlss)
+library(gamlss); library(pscl)
 source("F00.00.generic.R")
 source("F01.01.base.R")
 source("F01.01.goodness_of_fit.R")
 args = commandArgs(trailingOnly=TRUE)  # passed from script
 
 if (is.na(args[1])|args[1] == "") {
-  zoe = 1
+  zoe = 2
   nrm = "tpm5"
 } else {
   zoe = as.numeric(args[1])
   nrm = as.numeric(args[2])
   nrm = switch(nrm, "1" = "tpm5", "2" = "rpk", "3" = "asin")
 }
+nrm2 = switch(nrm, "rpk" = "RPK", "tpm5" = "TPM", "asin" = "arcsin")
 print(sprintf("zoe %s - %s", zoe, nrm))
 
 ### 0.2 Data
@@ -25,7 +26,9 @@ if (zoe == 1) {
 }
 excluded.subject <- gene.marginal.RPK.DRNA$meta$id %in% c(352, 420, 10083, 11210, 11259, 11790, 12623)
 DataMeta = gene.marginal.RPK.DRNA$meta[!excluded.subject,]
-RNA     = gene.marginal.RPK.DRNA$otu[,, 2]
+RNA      = gene.marginal.RPK.DRNA$otu[,, 2]
+excluded.taxa <- which(rownames(RNA) == "UNMAPPED (TOTAL)")
+RNA      = RNA[-excluded.taxa, ]
 DataRPK  = RNA[,colnames(RNA) %in% DataMeta$id]
 n.test   = 300
 
@@ -34,7 +37,7 @@ rm(gene.marginal.RPK.DRNA, excluded.subject, RNA)
 gc()
 
 ST    = apply(DataRPK, 2, sum)
-mean(ST) # 21M for ZOE2
+mean(ST) # 13M for ZOE2
 n.genes     = dim(DataRPK)[1]
 const = 10 * n.genes # actual scale (rel-abundance to compositional)
 DataTPM <- t(t(DataRPK)/ST) * const
@@ -85,11 +88,11 @@ for (i in seq_along(i.sample)) {
   gof.gamma[i, c(nm.gamma, nm.ks)] = do.call(ks.empirical, c(list(otu.i[otu.i > 0], model = "gamma"), args.gof))
   gof.ln[i, c(nm.ln, nm.ks)]       = do.call(ks.empirical, c(list(otu.i[otu.i > 0], model = "ln"), args.gof))
   gof.beta [i, "zero.prop"]= gof.gamma[i, "zero.prop"] = gof.ln[i, "zero.prop"] = mean(otu.i == 0)
-  if (i <= 5) full.zinb  <- try(zeroinfl(as.integer(otu.i) ~ 1, dist = "negbin"))
+  if (i <= 10) full.zinb  <- try(zeroinfl(as.integer(otu.i) ~ 1, dist = "negbin"))
   
   
   ## plots
-  if (i <= 5) {
+  if (i <= 10) {
   p1  <- 
     qqplot1(values = tpm.i[tpm.i > 0]/const, ks.pval = gof.beta[i, "ks.pval"],
             pbeta, shape1 = gof.beta[i, "alpha"], shape2 = gof.beta[i, "beta"], title = "Beta")
@@ -100,8 +103,10 @@ for (i in seq_along(i.sample)) {
     qqplot1(values = otu.i[otu.i > 0], ks.pval = gof.ln[i, "ks.pval"], 
             pLOGNO, mu = gof.ln[i, "mu"], sigma = gof.ln[i, "sig"], title = "Log-normal")
   p4 <-
-    qqplot.zinb(values = as.integer(tpm.i), estimates = param.zinb2(full.zinb))
-  
+    qqplot.zinb(values = as.integer(otu.i), estimates = param.zinb2(full.zinb))
+    saveRDS(p4 + xlab(paste0(taxa.i, " (in ", nrm2, "s)")), 
+            paste0("output/C0102QQzinb_zoe", zoe, "_", nrm, "_", i, ".rds"))
+    
   pp <- gridExtra::grid.arrange(p1, p2, p3, p4, 
                                 top = grid::textGrob(paste0("Fitted models for ", taxa.i)))
   ggsave(paste0("figure/C0102QQplot_zoe", zoe, "_", nrm, "_",i, ".png"), plot = pp,
@@ -149,7 +154,7 @@ if (0) {
       facet_grid(distribution ~ nrm) + 
       geom_histogram(binwidth = 0.01) + 
       # ggtitle("Kolmogorov-Smirnov test p-value histogram for Beta, Log-normal and Gamma distribution") +
-      xlab("KS (Lilliefors) test p-values") + ggtitle(if (zoe == 1) "(X) ZOE 1.0 (n = 116)" else "(A) ZOE 2.0 (n = 297)") + 
+      xlab("KS (Lilliefors) test p-values") + ggtitle(if (zoe == 1) "(B) ZOE-pilot (n = 116)" else "(A) ZOE 2.0 (n = 297)") + 
       geom_vline(xintercept = 0.05, col = "red") + 
       geom_text(data = gof.stat, aes(pval, count, label = reject)) +
       theme_bw()
@@ -157,3 +162,20 @@ if (0) {
     ggsave(paste0("figure/C0102KS_zoe",zoe, "-p-Histogram_.png"), width = 9, height = 6)
   }
 }
+
+
+if (0) { # ZINB QQ-plot combined across normalization methods
+  for (zoe in 2:2) {
+    gof.zinb <- NULL
+    for (i in 1:10) {
+      for (nrm in c("rpk", "tpm5", "asin")) {
+        # nrm2 = switch(nrm, "rpk" = "RPK", "tpm5" = "TPM", "asin" = "arcsin")
+        gof.zinb[[nrm]] <- 
+          readRDS(sprintf("output/C0102QQzinb_zoe%s_%s_%s.rds", zoe, nrm, i)) + 
+          ggtitle(NULL) + if (nrm != "asin") {xlab(NULL)}
+      }
+      pp <- gridExtra::grid.arrange(grobs = gof.zinb)
+      ggsave(sprintf("figure/C0102QQzinb_zoe%s_all_%s.png", zoe, i), plot = pp, width = 5, height = 9)
+    }
+  }
+} 

@@ -153,7 +153,7 @@ for (i in rng) {
     cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), ".\n")
     
     # do the tests on the ramdon ZINB distribution we created
-    result <- tester.set.HD.batch(data, n.gene=n.gene) 
+    result <- tester.set.HD.batch(data, n.gene=n.gene, De2.skip = TRUE) 
                                   # suppressWarnWagner = TRUE, # if not suppressed, the slurm-out file size explodes.
                                   # LB.skip = F,LN.skip = F, MAST.skip = F,
                                   # KW.skip = F, Wg.skip = F, De2.skip = F, WRS.skip = F,

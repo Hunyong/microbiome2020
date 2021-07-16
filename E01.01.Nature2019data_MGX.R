@@ -148,3 +148,38 @@ hist(zp.D[zp.D > 0])
 hist(zp.R[zp.R > 0])
 mean(zp.D) #87.8%; 
 mean(zp.R) #96.3%
+
+
+
+
+
+
+
+gene.full.RPK.DRNA <- readRDS("Nature2019data/data.geneRPK.full.DRNA.IBD.rds")
+gene.full.RPK.DRNA %$% otu[!taxa$bacteria %in% c("(TOTAL)", "(GAP)"),,] -> tmp
+
+tmp %>% rownames() %>% gsub(".* ", "", .) -> tmp.gene.names
+tmp.1 = data.frame(tmp[,, 1], species = tmp.gene.names); names(tmp.1) <- gsub("X", "", names(tmp.1))
+tmp.2 = data.frame(tmp[,, 2], species = tmp.gene.names); names(tmp.2) <- gsub("X", "", names(tmp.2))
+rm(tmp); gc()
+
+aggregate(. ~ species, data=tmp.1, sum, na.action = na.pass, drop = FALSE, na.rm = FALSE) -> a1
+aggregate(. ~ species, data=tmp.2, sum, na.action = na.pass, drop = FALSE, na.rm = FALSE) -> a2
+# a2 <- full_join(a1[, "species", drop=FALSE], a2, by = "species")
+# a1 <- left_join(a2[, "species", drop=FALSE], a1, by = "species")
+if (!all(names(a1) == names(a2))) {stop("Name does not match!")}
+if (!all(a1$species == a2$species)) {stop("Species does not match!")}
+
+bact.marginal.RPK.DRNA <- array(NA, dim = c( dim(a1)[1], dim(a1)[2] - 1, 2), 
+                                dimnames = list(a1$species, 
+                                                gene.full.RPK.DRNA$meta$Participant.ID, 
+                                                c("DNA", "RNA")))
+bact.marginal.RPK.DRNA[,,1] <- as.matrix(a1[,-1])
+bact.marginal.RPK.DRNA[,,2] <- as.matrix(a2[,-1])
+bact.marginal.RPK.DRNA[is.na(bact.marginal.RPK.DRNA)] <- 0
+
+bact.marginal.RPK.DRNA <- list(otu = bact.marginal.RPK.DRNA,
+                               taxa = data.frame(bacteria = a1$species),
+                               meta = gene.full.RPK.DRNA$meta)
+saveRDS(bact.marginal.RPK.DRNA, "Nature2019data/data.bactRPK.DRNA.IBD.rds")
+rm(a1, a2, tmp.1, tmp.2, bact.marginal.RPK.DRNA)
