@@ -3,7 +3,7 @@
 #BiocManager::install("DESeq2")
 library(BiocManager)
 n.test = 20 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-            #"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI, "WRS", "MGS", "ANCOM.sz", "ANCOM"
+#"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI, "WRS", "MGS", "ANCOM.sz", "ANCOM"
 # if(!require(betareg)){
 #   install.packages("betareg")
 # }
@@ -19,9 +19,11 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
                                 KW.skip = FALSE, Wg.skip = FALSE,
                                 De2.skip = FALSE, WRS.skip = FALSE,
                                 MGS.skip = FALSE, ANCOM.skip = FALSE,
+                                LEfSe.skip = FALSE, ALDEX.skip = FALSE,
+                                SONGBIRD.skip = FALSE,
                                 skip.cumulative = FALSE,
                                 skip.small.n = FALSE) {
-                                # DS2.version = c("vanilla", "zinb")
+  # DS2.version = c("vanilla", "zinb")
   # description
   # data should have y and sampleSum    all n.sample x (n.gene(gene) + 3 (phenotype + batch + sampleSum))
   #          outcome (phenotype), nuisance (batch)
@@ -213,10 +215,36 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     result[[2]]["ANCOM", is.infinite(result[[1]]["ANCOM", ])] = NA
   } else {cat("ANCOM-BC is skipped\n")}
   
-  # #17. (reserved)
-  # tmp <- data.frame(coef = NA, pval = NA)    #reserved for possible addition
-  # result[[1]][15,1] <- tmp[1,1]
-  # result[[2]][15,1] <- tmp[1,2]
+  #17. LEfSe
+  cat("17. LEfSe\n")
+  if(!LEfSe.skip){
+    tmp <- try({LEfSe(data[, index.filtered.meta])})
+    if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+    
+    result[[1]]["LFS", index.filtered] <- tmp[,1] #coef.
+    result[[2]]["LFS", index.filtered] <- tmp[,2] #rank/n.
+  } else {cat("LEfSe is skipped\n")}
+  
+  #18. ALDEX2
+  cat("18. ALDEX2\n")
+  if(!ALDEX.skip){
+    tmp <- try({aldex(data[, index.filtered.meta])})
+    if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+    
+    result[[1]]["ALDEX", index.filtered] <- tmp[,1] #coef.
+    result[[2]]["ALDEX", index.filtered] <- tmp[,2] #pval.
+  } else {cat("ALDEX2 is skipped\n")}
+  
+  #19. SONGBIRD
+  cat("19. SONGBIRD\n")
+  if(!SONGBIRD.skip){
+    tmp <- try({songbird(data[, index.filtered.meta])})
+    if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+    
+    result[[1]]["SBIRD", index.filtered] <- tmp[,1] #coef.
+    result[[2]]["SBIRD", index.filtered] <- tmp[,2] #pval.
+  } else {cat("SONGBIRD is skipped\n")}
+  
   return(result)
 }
 
@@ -555,8 +583,8 @@ DS2.zinb <- function (data.l) {
   ### Getting the ZINB-wave weights
   col.otu = which(grepl("^y", names(data.l))) # updated
   zinb <- DESeqDataSetFromMatrix(countData = round(t(data.l[, col.otu]),0),
-                                colData = data.l[, !grepl("^y", names(data.l))],
-                                design= ~ batch + phenotype)
+                                 colData = data.l[, !grepl("^y", names(data.l))],
+                                 design= ~ batch + phenotype)
   
   # # we need to reorganize the assays in the SumExp from splatter
   assay(zinb) <- as.matrix(assay(zinb))
@@ -565,7 +593,7 @@ DS2.zinb <- function (data.l) {
   # epsilon setting as recommended by the ZINB-WaVE integration paper
   zinb <- zinbwave(zinb, X = X, K=0, observationalWeights=TRUE,
                    BPPARAM=BiocParallel::SerialParam(), epsilon=1e12)
-
+  
   dds <- DESeqDataSet(zinb, design= ~ batch + phenotype)
   
   dds <- DESeq(dds, sfType = "poscounts", test = "LRT", reduced = ~batch, minmu=1e-6, minRep=Inf)
@@ -662,7 +690,7 @@ DS2.zinb.old <- function (data.l) {
 ### 12. DESeq2 plain version.
 DS2.vanilla <- function (data.l) {
   tmp.dat <<- data.l
-saveRDS(tmp.dat, "tmp.dat")  
+  saveRDS(tmp.dat, "tmp.dat")  
   require(DESeq2)
   dds <- DESeqDataSetFromMatrix(countData = round(t(data.l[, grepl("^y", names(data.l))]),0),
                                 colData = data.l[, !grepl("^y", names(data.l))],
@@ -699,7 +727,7 @@ WRS <- function (data) {
 
 ### 14. metagenomeSeq
 mgs.base <- function (data) {
-
+  
   require (metagenomeSeq)
   
   # whole-data-level test. not adequate for inidivdual-gene-level test.
@@ -761,5 +789,30 @@ ANC <- function(data, ignore.structural.zero = FALSE) {
   out[rownames(out.ancom$feature.table), 2] = out.ancom$res$p.val
   
   if (ignore.structural.zero) {out[is.infinite(out[, 1]), 2] = NA}
+  return(out)
+}
+
+
+### Place holders for the new tests
+LEfSe = function(data) {
+  # ..... do tests here
+  out = matrix(NA, nrow = length(y.names), ncol = 2, dimnames = list(y.names, c("Estimate", "pval")))
+  out[, 1] = NA # Insert the coefficients of n genes here!
+  # For LEfSe, in the p-value slot, add the rank / the number of genes. (the top genes would get 1/n.genes)
+  out[, 2] = NA # Insert the p-values of n genes here!
+  return(out)
+}
+aldex = function(data) {
+  # ..... do tests here
+  out = matrix(NA, nrow = length(y.names), ncol = 2, dimnames = list(y.names, c("Estimate", "pval")))
+  out[, 1] = NA # Insert the coefficients of n genes here!
+  out[, 2] = NA # Insert the p-values of n genes here!
+  return(out)
+}
+songbird = function(data) {
+  # ..... do tests here
+  out = matrix(NA, nrow = length(y.names), ncol = 2, dimnames = list(y.names, c("Estimate", "pval")))
+  out[, 1] = NA # Insert the coefficients of n genes here!
+  out[, 2] = NA # Insert the p-values of n genes here!
   return(out)
 }
