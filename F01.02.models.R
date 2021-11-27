@@ -795,13 +795,33 @@ ANC <- function(data, ignore.structural.zero = FALSE) {
 
 ### Place holders for the new tests
 LEfSe = function(data) {
+  require(SummarizedExperiment)
+  require(lefser)
+  require(dplyr)
+  name = names(data)
+  gene = which(grepl("y\\.", name))
+  gene.name = gsub("y\\.", "", name[gene])
+  cData = data %>% transmute(samples = 1:n(), phenotype, batch)
+  data = t(as.matrix(data[,gene]))
+  row.names(data) = gene.name
+  colData <- DataFrame(phenotype = as.character(cData$phenotype),
+                       batch = as.character(cData$batch),
+                       row.names = as.character(cData$samples))
+  se <- SummarizedExperiment(assays=list(data = data),
+                             colData=colData)
+  res_lefse = lefser(se, groupCol = "phenotype", blockCol = "batch", 
+                     kruskal.threshold = 0.5, wilcox.threshold = 0.5, lda.threshold = 0)
+  res_lefse$rank = nrow(res_lefse) + 1 - rank(abs(res_lefse$scores))
+  merged = left_join(data.frame(gene.name), res_lefse, by= c("gene.name" = "Names"))
+  merged$rank[which(is.na(merged$rank))] = max(merged$rank, na.rm = T) + 1
   # ..... do tests here
-  out = matrix(NA, nrow = length(y.names), ncol = 2, dimnames = list(y.names, c("Estimate", "pval")))
+  out = matrix(NA, nrow = length(gene.name), ncol = 2, dimnames = list(gene.name, c("Estimate", "pval")))
   out[, 1] = NA # Insert the coefficients of n genes here!
   # For LEfSe, in the p-value slot, add the rank / the number of genes. (the top genes would get 1/n.genes)
-  out[, 2] = NA # Insert the p-values of n genes here!
+  out[, 2] = merged$rank/length(gene.name) # Insert the p-values of n genes here!
   return(out)
 }
+                   
 aldex = function(data) {
   # ..... do tests here
   out = matrix(NA, nrow = length(y.names), ncol = 2, dimnames = list(y.names, c("Estimate", "pval")))
