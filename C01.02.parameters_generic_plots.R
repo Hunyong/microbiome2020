@@ -16,11 +16,8 @@ DRNA.name = ifelse(DRNA == "DNA", "_DNA", "")
 type = "gene"
 model = "ziln"
 for (type in c("gene", "genebact", "bact")) {
-  # if(type != "bact") next
   for (model in c("ziln", "zinb")) {
     print(type); print(model)
-# if (zoe != 1) 
-#   if (type != "gene" | model != "ziln") next
     a <-
       data.frame(params = rep(c("theta", "delta", "kappa"), each = 3), 
                  params2 = c("mu", "th", "pi"), 
@@ -41,19 +38,10 @@ for (type in c("gene", "genebact", "bact")) {
       if (n.irregular / n.est > 0.3) 
         warning(sprintf("There are more than %2.0f non regular thetas (%2.0f%%).", 
                         n.irregular, n.irregular/n.est * 100))
-      # n.est = dim(na.omit(cond.est))[1]
-      # cond.est <- 
-      #   cond.est %>% dplyr::filter(theta < 1e+4) %T>% 
-      #   {n.regular = dim(na.omit(.))[1]; 
-      #    if(n.regular / n.est < 0.7)  warning(sprintf("There are more than %2.0f non regular thetas (%2.0f%%).", 
-      #                                                 n.est - n.regular, (1 - n.regular/n.est) * 100))}
-      
+
       lim1 = max(cond.est$mu, na.rm = TRUE) * 1.05
       lim2 = max(cond.est$theta, na.rm = TRUE) * 1.05
-      # lim1 = min(max(cond.est$mu, na.rm = TRUE) * 1.05, a[1, "Q3"] * 5)
-      # lim2 = min(max(cond.est$theta, na.rm = TRUE) * 1.05, a[2, "Q3"] * 5)
-      # lim2 = min(lim2, max(cond.est$theta[cond.est$theta <= lim2], na.rm = TRUE) * 1.05)
-      
+
     # B. 3d plots
       p1_3d <- ~{
         lvls = c("D1", "D2", "H1", "H2")
@@ -74,8 +62,6 @@ for (type in c("gene", "genebact", "bact")) {
                         ylim = c(0, lim2), # theta
                         zlim = c(0, lim1), # mu
                         pch = shp2, color = clr2, box = TRUE)
-        # legend(s3d$xyz.convert(0.75, Q3[2]*10, Q3[1]*10), legend = lvls, 
-        #        col =  clr, pch = shp, box.lwd = 0.1)
       }
       
       
@@ -96,14 +82,6 @@ for (type in c("gene", "genebact", "bact")) {
                                     labels = c(TeX("$\\pi \\approx 0.3$"), 
                                                TeX("$\\pi \\approx 0.6$"),
                                                TeX("$\\pi \\approx 0.9$")))
-      # if (model == "zinb") {
-      #   lim.x = ifelse (type == "bact", 100, 50)
-      #   # lim.y = ifelse (zoe == 1, 1e+5, 5) # ifelse (type == "genebact", 1e+5, 1e+5)
-      #   lim.y = 5
-      # } else {
-      #   lim.x = 50
-      #   lim.y = 5
-      # }
       int_breaks <- function(x, n = 5) {
         l <- pretty(x, n)
         l[abs(l %% 1) < .Machine$double.eps ^ 0.5] 
@@ -177,8 +155,6 @@ for (type in c("gene", "genebact", "bact")) {
                         ylim = c(0, lim5), # theta
                         zlim = c(0, lim4), # mu
                         pch = shp2, color = clr2, box = TRUE)
-        # legend(s3d$xyz.convert(Q3[3]*3, Q3[2]*5, Q3[1]*5), legend = paste0("batch ", lvls),
-        #        col =  clr, pch = shp, box.lwd = 0.1)
       }
       
       
