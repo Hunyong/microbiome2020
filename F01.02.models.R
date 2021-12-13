@@ -821,12 +821,27 @@ LEfSe = function(data) {
   out[, 2] = merged$rank/length(gene.name) # Insert the p-values of n genes here!
   return(out)
 }
-                   
-aldex = function(data) {
-  # ..... do tests here
-  out = matrix(NA, nrow = length(y.names), ncol = 2, dimnames = list(y.names, c("Estimate", "pval")))
-  out[, 1] = NA # Insert the coefficients of n genes here!
-  out[, 2] = NA # Insert the p-values of n genes here!
+
+aldex <- function(data) {
+  library(dplyr)
+  library(ALDEx2)
+  data <- readRDS("data.RDS")
+  name <- names(data)
+  gene <- which(grepl("y\\.", name))
+  gene.name <- gsub("y\\.", "", name[gene])
+  cData <- data %>% transmute(samples = 1:n(), phenotype, batch)
+  data <- t(as.matrix(data[, gene]))
+  mode(data) <- "integer"
+  row.names(data) <- gene.name
+  conds <- cData$phenotype
+  ALDEx2_output <- aldex(data, conds,
+    mc.samples = 200, test = "kw", effect = TRUE,
+    include.sample.summary = FALSE, denom = "all", verbose = FALSE
+  )
+
+  out <- matrix(NA, nrow = length(gene.name), ncol = 2, dimnames = list(gene.name, c("Estimate", "pval")))
+  out[, 1] <- NA
+  out[, 2] <- ALDEx2_output$kw.ep
   return(out)
 }
 songbird = function(data) {
