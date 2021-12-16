@@ -825,7 +825,6 @@ LEfSe = function(data) {
 aldex <- function(data) {
   library(dplyr)
   library(ALDEx2)
-  data <- readRDS("data.RDS")
   name <- names(data)
   gene <- which(grepl("y\\.", name))
   gene.name <- gsub("y\\.", "", name[gene])
@@ -833,17 +832,20 @@ aldex <- function(data) {
   data <- t(as.matrix(data[, gene]))
   mode(data) <- "integer"
   row.names(data) <- gene.name
-  conds <- cData$phenotype
-  ALDEx2_output <- aldex(data, conds,
-    mc.samples = 200, test = "kw", effect = TRUE,
-    include.sample.summary = FALSE, denom = "all", verbose = FALSE
-  )
+
+  covariates <- data.frame("phenotype" = cData$phenotype,
+                          "batch" = cData$batch)
+  mm <- model.matrix(~ phenotype + batch, covariates)
+
+  x <- aldex.clr(data, mm, mc.samples=128, denom="all")
+  glm.test <- aldex.glm(x)
 
   out <- matrix(NA, nrow = length(gene.name), ncol = 2, dimnames = list(gene.name, c("Estimate", "pval")))
   out[, 1] <- NA
-  out[, 2] <- ALDEx2_output$kw.ep
+  out[, 2] <- glm.test$`model.phenotypeH Pr(>|t|)`
   return(out)
 }
+
 songbird = function(data) {
   # ..... do tests here
   out = matrix(NA, nrow = length(y.names), ncol = 2, dimnames = list(y.names, c("Estimate", "pval")))
