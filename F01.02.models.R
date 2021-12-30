@@ -2,8 +2,8 @@
 # install.packages("BiocManager")
 #BiocManager::install("DESeq2")
 library(BiocManager)
-n.test = 20 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-#"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI, "WRS", "MGS", "ANCOM.sz", "ANCOM"
+n.test = 22 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
+#"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI, "WRS", "MGS", "ANCOM.sz", "ANCOM", "LFE", "ALDEX"
 # if(!require(betareg)){
 #   install.packages("betareg")
 # }
@@ -45,7 +45,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   
   # 0.0 skeleton #empty matrix
   test.names <- c("LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI", "WRS", "MGS", "ANCOM.sz", "ANCOM")
+                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI", "WRS", "MGS", "ANCOM.sz", "ANCOM", "LFE", "ALDEX")
   mat.tmp <- matrix(NA, n.test, n.gene, dimnames = list(test.names, NULL)) # n.test=15, n.gene=1000
   result <- list(coef = mat.tmp, pval = mat.tmp)
   if (skeleton) {return(result)}
@@ -230,7 +230,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   if(!ALDEX.skip){
     tmp <- try({aldex(data[, index.filtered.meta])})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
-    
+
     result[[1]]["ALDEX", index.filtered] <- tmp[,1] #coef.
     result[[2]]["ALDEX", index.filtered] <- tmp[,2] #pval.
   } else {cat("ALDEX2 is skipped\n")}
