@@ -8,6 +8,7 @@ zoe = 2  # zoe = "IBD"
 type = "gene"
 DRNA = "RNA"
 nrm = "tpm5" #"rpk" "asin"
+n.samp = "full" # or n.samp = 300
 
 for (DRNA in c("RNA")) {
   for (zoe in (1:2))  {
@@ -22,23 +23,33 @@ for (DRNA in c("RNA")) {
       DRNA.name = ifelse(DRNA == "DNA", "_DNA", "")
     
       ### 0.2 Data
-      fn <- sprintf("../Data-processed/data.%s.DRNA.%s.rds", type.full, zoe.nm2)
-      
-      data <- readRDS(fn)
-      excluded.subject <- data$meta$id %in% c(352, 420, 10083, 12623, 11259, 11790)
-      DataMeta = data$meta[!excluded.subject,]
-      batchGrp = switch(zoe, "1" = "170628", "2" = "180530")
-      DataMeta <-
-        DataMeta %>% 
-        mutate(group = paste0(ifelse(cariesfree == 1, "H", "D"), ifelse(batch.RNA == batchGrp, 1, 2)),
-               group_batch =  ifelse(batch.RNA == batchGrp, 1, 2),
-               group_disease = ifelse(cariesfree == 1, "H", "D"))
+      if (zoe %in% 1:2) {
+        fn   = sprintf("../Data-processed/data.%s.DRNA.%s.rds", type.full, zoe.nm2)
+        data = readRDS(fn)
+        excluded.subject <- data$meta$id %in% c(352, 420, 10083, 12623, 11259, 11790)
+        DataMeta = data$meta[!excluded.subject,]
+        batchGrp = switch(zoe, "1" = "170628", "2" = "180530")
+        DataMeta <-
+          DataMeta %>% 
+          mutate(group = paste0(ifelse(cariesfree == 1, "H", "D"), ifelse(batch.RNA == batchGrp, 1, 2)),
+                 group_batch =  ifelse(batch.RNA == batchGrp, 1, 2),
+                 group_disease = ifelse(cariesfree == 1, "H", "D"))
+      } else {
+        fn   = sprintf("../MicrobiomePaper2020/Nature2019data/data.%s.DRNA.IBD.rds", type.full)
+        data = readRDS(fn)
+        DataMeta = 
+          data$meta %>% 
+          mutate(id = External.ID,
+                 group_batch = ifelse(site_name %in% c("Cedars-Sinai", "MGH"), 1, 2),
+                 group_disease = ifelse(diagnosis %in% c("UC", "CD"), "D", "H"),
+                 group = paste0(group_disease, group_batch))
+      }
       
       RNA         = data$otu[,, DR.no]
       DataRPK116  = RNA[,colnames(RNA) %in% DataMeta$id]
-      ST          = apply(DataRPK116, 2, sum)  # sample total
-      mean(ST) # 21M
-      n.genes     = dim(DataRPK116)[1]
+      ST          = apply(DataRPK116, 2, sum, na.rm = TRUE)  # sample total
+      mean(ST) # 21M, 0.99 for IBD
+      n.genes     = dim(DataRPK116)[1]   # 12million for IBD
       scale1 = 10               # normalized relative abundance..  = average sampleSum / number of taxa.
       scale2 = scale1 * n.genes # actual scale (rel-abundance to compositional)
       
@@ -83,9 +94,14 @@ for (DRNA in c("RNA")) {
         ### Estimation 
         if(T){
           set.seed(1)
-          samp <- sample(genes.regular.index)
-          # samp <- sample(genes.regular.index, 
-          #                ifelse(type == "bact", length(genes.regular.index), 300))
+          if (is.null(n.samp) | n.samp == "full") {
+            n.samp = "full"
+            samp <- genes.regular.index
+          } else {
+            samp <- sample(genes.regular.index,
+                           ifelse(type == "bact", length(genes.regular.index), n.samp))
+          }
+          n.samp.nm = paste0("samp", n.samp)
           
           ### 2. conditional estimates
           
@@ -107,7 +123,7 @@ for (DRNA in c("RNA")) {
           }
           cond.est <- do.call(rbind, cond.est)
           names(cond.est) <- gsub("\\.\\(Intercept\\)", "", names(cond.est))
-          saveRDS(cond.est, paste0("output/para_selection_est", DRNA.name, zoe.nm, "_", type, "_", model, "_", nrm, ".rds"))
+          saveRDS(cond.est, paste0("output/para_selection_est", DRNA.name, zoe.nm, "_", type, "_", model, "_", nrm, "_", n.samp.nm, ".rds"))
           
           ### >>> plots are outsourced to C01.02....plots.R
         }
