@@ -3,7 +3,7 @@
 #BiocManager::install("DESeq2")
 library(BiocManager)
 n.test = 22 #"LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-#"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI, "WRS", "MGS", "ANCOM.sz", "ANCOM", "LFE", "ALDEX"
+#"KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI, "WRS", "MGS", "ANCOM.sz", "ANCOM", "LFS", "ALDEX"
 # if(!require(betareg)){
 #   install.packages("betareg")
 # }
@@ -45,7 +45,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   
   # 0.0 skeleton #empty matrix
   test.names <- c("LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
-                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI", "WRS", "MGS", "ANCOM.sz", "ANCOM", "LFE", "ALDEX")
+                  "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI", "WRS", "MGS", "ANCOM.sz", "ANCOM", "LFS", "ALDEX")
   mat.tmp <- matrix(NA, n.test, n.gene, dimnames = list(test.names, NULL)) # n.test=15, n.gene=1000
   result <- list(coef = mat.tmp, pval = mat.tmp)
   if (skeleton) {return(result)}
@@ -236,14 +236,14 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   } else {cat("ALDEX2 is skipped\n")}
   
   #19. SONGBIRD
-  cat("19. SONGBIRD\n")
-  if(!SONGBIRD.skip){
-    tmp <- try({songbird(data[, index.filtered.meta])})
-    if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+  # cat("19. SONGBIRD\n")
+  # if(!SONGBIRD.skip){
+  #   tmp <- try({songbird(data[, index.filtered.meta])})
+  #   if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
     
-    result[[1]]["SBIRD", index.filtered] <- tmp[,1] #coef.
-    result[[2]]["SBIRD", index.filtered] <- tmp[,2] #pval.
-  } else {cat("SONGBIRD is skipped\n")}
+  #   result[[1]]["SBIRD", index.filtered] <- tmp[,1] #coef.
+  #   result[[2]]["SBIRD", index.filtered] <- tmp[,2] #pval.
+  # } else {cat("SONGBIRD is skipped\n")}
   
   return(result)
 }
@@ -846,10 +846,10 @@ aldex <- function(data) {
   return(out)
 }
 
-songbird = function(data) {
-  # ..... do tests here
-  out = matrix(NA, nrow = length(y.names), ncol = 2, dimnames = list(y.names, c("Estimate", "pval")))
-  out[, 1] = NA # Insert the coefficients of n genes here!
-  out[, 2] = NA # Insert the p-values of n genes here!
-  return(out)
-}
+# songbird = function(data) {
+#   # ..... do tests here
+#   out = matrix(NA, nrow = length(y.names), ncol = 2, dimnames = list(y.names, c("Estimate", "pval")))
+#   out[, 1] = NA # Insert the coefficients of n genes here!
+#   out[, 2] = NA # Insert the p-values of n genes here!
+#   return(out)
+# }
