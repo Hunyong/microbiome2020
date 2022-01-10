@@ -141,7 +141,7 @@ filtr = nonzero.prop >= prev.filter
 if (sum(!filtr)) data[, which(!filtr)] = NA
 cat("Additional filtering after crafting: ", sum(!filtr), ".\n")
 
-cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
+# cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
 cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), ".\n")
 
 # do the tests on the ramdon ZINB distribution we created
