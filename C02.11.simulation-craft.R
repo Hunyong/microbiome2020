@@ -30,7 +30,7 @@ cat("The Command Arg is: \n"); print(args)
 # model = 0                   # craft
 # perturb = 0                 # Permuting is naturally considered.
 # n = NA  # 80 800  sample size
-zoe = as.numeric(args[1]) # 1..3  generative model (1 = ZOE 1, 2 = 2, IBD = IBD)
+zoe = as.numeric(args[1]) # 1..3  generative model (1 = ZOE 1, 2 = 2, 3 = IBD)
 j = as.numeric(args[2])     # 0..1 kappa effect (No effect = permute, preserve the batch)
 type = as.character(args[3])# gene genebact bact
 sim = as.numeric(args[4]) # 1..100 simulation replicate id
