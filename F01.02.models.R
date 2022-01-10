@@ -196,7 +196,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   } else {cat("WRS is skipped\n")}
   
   #15. metagenomeSeq
-  cat("15 metagenomeSeq\n")
+  cat("\n15 metagenomeSeq\n")
   if(!MGS.skip){
     tmp <- try({mgs(data[, index.filtered.meta])})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
@@ -238,15 +238,15 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     result[[2]]["ALDEX", index.filtered] <- tmp[,2] #pval.
   } else {cat("ALDEX2 is skipped\n")}
   
-  #19. SONGBIRD
-  cat("19. SONGBIRD\n")
-  if(!SONGBIRD.skip){
-    tmp <- try({songbird(data[, index.filtered.meta])})
-    if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
-    
-    result[[1]]["SBIRD", index.filtered] <- tmp[,1] #coef.
-    result[[2]]["SBIRD", index.filtered] <- tmp[,2] #pval.
-  } else {cat("SONGBIRD is skipped\n")}
+  # #19. SONGBIRD
+  # cat("19. SONGBIRD\n")
+  # if(!SONGBIRD.skip){
+  #   tmp <- try({songbird(data[, index.filtered.meta])})
+  #   if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+  #   
+  #   result[[1]]["SBIRD", index.filtered] <- tmp[,1] #coef.
+  #   result[[2]]["SBIRD", index.filtered] <- tmp[,2] #pval.
+  # } else {cat("SONGBIRD is skipped\n")}
   
   return(result)
 }
@@ -743,6 +743,7 @@ mgs.base <- function (data) {
   #print(309)  
   
   cData = data %>% transmute(samples = 1:n(), phenotype, batch)
+  rownames(cData) = 1:dim(cData)[1]
   data = t(as.matrix(data[,gene]))
   dimnames(data) = list(gene.name, cData$samples)
   obj = newMRexperiment(counts = data, 
