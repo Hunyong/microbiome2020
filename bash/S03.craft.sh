@@ -2,8 +2,9 @@
 for zoe in 1 2 3; do # ZILN
   for j in 2; do 
     for ttype in gene genebact bact; do 
-      if [[ "$zoe" == 3 && "$type" != "gene" ]]; then
+      if [[ "$zoe" == 3 && "$ttype" != "gene" ]]; then
         # No experiment available for IBD bact and gene-bact
+        echo "Not available.";      
       elif [[ "$ttype" == "bact" ]]; then
         # For ZOE bact, n.gene = 300, n.signal = 30.
         for sim in 1..10; do
