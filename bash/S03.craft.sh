@@ -4,7 +4,7 @@ for zoe in 1 2 3; do # ZILN
     for type in gene genebact bact; do 
       if [[ "$zoe" = 3 && "$type" != "gene" ]]; then
         # No experiment available for IBD bact and gene-bact
-      else if [[ "$type" = "bact" ]]; then
+      elif [[ "$type" = "bact" ]]; then
         # For ZOE bact, n.gene = 300, n.signal = 30.
         for sim in 1..10; do
           sbatch --time=10:00:00 --mem 10000 bash/runR.sh C02.11.simulation-craft.R  $zoe $j $type $sim 30 300 1
