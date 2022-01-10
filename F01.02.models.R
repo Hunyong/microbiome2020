@@ -33,6 +33,9 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   require(magrittr)
   
   if (skip.cumulative) { # IF skip.cumulative = TRUE and specify and a method is specified as skipped, all its preceding methods are to be skipped.
+    if (SONGBIRD.skip) ALDEX.skip = TRUE
+    if (ALDEX.skip) LEfSe.skip = TRUE
+    if (LEfSe.skip) ANCOM.skip = TRUE
     if (ANCOM.skip) MGS.skip = TRUE
     if (MGS.skip) WRS.skip = TRUE
     if (WRS.skip) De2.skip = TRUE
@@ -221,8 +224,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     tmp <- try({LEfSe(data[, index.filtered.meta])})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
     
-    result[[1]]["LFS", index.filtered] <- tmp[,1] #coef.
-    result[[2]]["LFS", index.filtered] <- tmp[,2] #rank/n.
+    result[[1]]["LFE", index.filtered] <- tmp[,1] #coef.
+    result[[2]]["LFE", index.filtered] <- tmp[,2] #rank/n.
   } else {cat("LEfSe is skipped\n")}
   
   #18. ALDEX2
@@ -812,11 +815,13 @@ LEfSe = function(data) {
   res_lefse = lefser(se, groupCol = "phenotype", blockCol = "batch", 
                      kruskal.threshold = 0.5, wilcox.threshold = 0.5, lda.threshold = 0)
   res_lefse$rank = nrow(res_lefse) + 1 - rank(abs(res_lefse$scores))
+  res_lefse$Names = res_lefse$Names %>% gsub("`", "", .) %>% as.character
   merged = left_join(data.frame(gene.name), res_lefse, by= c("gene.name" = "Names"))
-  merged$rank[which(is.na(merged$rank))] = max(merged$rank, na.rm = T) + 1
+  # merged$rank[which(is.na(merged$rank))] = max(merged$rank, na.rm = T) + 1
+  merged$rank[which(is.na(merged$rank))] = (max(merged$rank, na.rm = T) + length(merged$rank))/2
   # ..... do tests here
   out = matrix(NA, nrow = length(gene.name), ncol = 2, dimnames = list(gene.name, c("Estimate", "pval")))
-  out[, 1] = NA # Insert the coefficients of n genes here!
+  out[, 1] = merged$scores # Insert the coefficients of n genes here!
   # For LEfSe, in the p-value slot, add the rank / the number of genes. (the top genes would get 1/n.genes)
   out[, 2] = merged$rank/length(gene.name) # Insert the p-values of n genes here!
   return(out)
