@@ -8,7 +8,7 @@ library(ggplot2)
 nrm = "tpm5"
 zoe = 2 # zoe = "IBD"
 zoe.nm = if (zoe %in% 1:2) paste0("_zoe", zoe) else "_NEWDATA"
-n.samp = 300
+n.samp = "full"
 n.samp.nm = paste0("samp", n.samp)
 
 DRNA = "RNA"
@@ -19,7 +19,7 @@ type = "gene"
 model = "ziln"
 for (type in c("gene", "genebact", "bact")) {
   # for (model in c("ziln")) {
-  for (model in c("ziln", "zinb")) {
+  # for (model in c("ziln", "zinb")) {
     print(type); print(model)
     a <-
       data.frame(params = rep(c("theta", "delta", "kappa"), each = 3), 
@@ -122,112 +122,112 @@ for (type in c("gene", "genebact", "bact")) {
       theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
       facet_grid(rows = vars(pi_id_f), labeller = label_parsed)
     
-    p2_all = plot_grid(p2_3d, p2, ncol = 1, nrow = 2, rel_heights = c(1, 2))
+    # p2_all = plot_grid(p2_3d, p2, ncol = 1, nrow = 2, rel_heights = c(1, 2))
     
-    
-    ######## p3 (kappa)
-    cond.est.kappa.batch1 <- 
-      dplyr::filter(cond.est, group %in% c("H1","D1"))
-    cond.est.kappa.batch2 <- 
-      dplyr::filter(cond.est, group %in% c("H2","D2"))
-    
-    cond.est.kappa <- 
-      cbind(b1 = cond.est.kappa.batch1, 
-            b2 = cond.est.kappa.batch2) %>%
-      mutate(kappa_pi = abs(qlogis(b1.pi) - qlogis(b2.pi)), 
-             kappa_mu = abs(log(b1.mu) - log(b2.mu)), 
-             kappa_theta = abs(log(b1.theta) - log(b2.theta)),
-             disease = ifelse(b1.disease == "D", "diseased", "healthy")) %>% 
-      dplyr::select("disease", "kappa_pi", "kappa_mu", "kappa_theta")
-    
-    # A. ranges
-    a[7, c("Q1", "Q2", "Q3")] <- cond.est.kappa$kappa_mu %>% summary %>% round(1) %>% "["(c(2,3,5))#  %>% paste(collapse = ", ")
-    a[8, c("Q1", "Q2", "Q3")] <- cond.est.kappa$kappa_theta %>% summary %>% round(1) %>% "["(c(2,3,5))#  %>% paste(collapse = ", ")
-    a[9, c("Q1", "Q2", "Q3")] <- cond.est.kappa$kappa_pi %>% "["(., is.finite(.)) %>% summary %>% round(1) %>% "["(c(2,3,5))#  %>% paste(collapse = ", ")
-    
-    lim7 = min(max(cond.est.kappa$kappa_mu, na.rm = TRUE) * 1.05, a[7, "Q3"] * 5)
-    lim8 = min(max(cond.est.kappa$kappa_theta, na.rm = TRUE) * 1.05, a[8, "Q3"] * 5)
-    lim9 = min(max(cond.est.kappa$kappa_pi, na.rm = TRUE) * 1.05, a[9, "Q3"] * 5)
-    
-    # B. 3d plots
-    p3_3d <- ~{
-      lvls = c("diseased", "healthy")
-      shp = c(16, 1)
-      shp2 = cond.est.kappa$disease %>% factor(levels = lvls) %>% as.numeric() %>% "["(shp, .)
-      clr = c("#F8766D", "#00BFC4")
-      clr2 = cond.est.kappa$disease %>% factor(levels = lvls) %>% as.numeric() %>% "["(clr, .)
-      
-      Q3 = a[7:9, "Q3"]
-      s3d = 
-        scatterplot3d(cond.est.kappa[, c("kappa_pi", "kappa_theta", "kappa_mu")], angle = 55, 
-                      # main = "batch effect estimates",
-                      main = TeX("(|$\\kappa_{\\mu}$|, |$\\kappa_{\\theta}$|, |$\\kappa_{\\pi}$|) estimates"),
-                      xlab = expression(kappa[pi]),
-                      ylab = expression(kappa[theta]),
-                      zlab = expression(kappa[mu]),
-                      mar = c(2.5, 2.5, 2.5, 2.5),
-                      xlim = c(0, lim9), # pi
-                      ylim = c(0, lim8), # theta
-                      zlim = c(0, lim7), # mu
-                      pch = shp2, color = clr2, box = TRUE)
-      # legend(s3d$xyz.convert(Q3[3]*3, Q3[2]*5, Q3[1]*5), legend = lvls,
-      #        col =  clr, pch = shp, box.lwd = 0.1)
-    }
-    
-    
-    # C. sliced plots
-    cond.est.kappa.pi03 <- cond.est.kappa %>% dplyr::filter (kappa_pi <= 0.4)
-    cond.est.kappa.pi07 <- cond.est.kappa %>% dplyr::filter (kappa_pi > 0.6 & kappa_pi <= 0.8)
-    cond.est.kappa.pi12 <- cond.est.kappa %>% dplyr::filter (kappa_pi > 1.1 & kappa_pi <= 1.3)
-    cond.est.kappa.pi03$pi_id = 0.3
-    cond.est.kappa.pi07$pi_id = 0.7
-    cond.est.kappa.pi12$pi_id = 1.2
-    
-    cond.est.kappa.all = rbind(cond.est.kappa.pi03, cond.est.kappa.pi07, cond.est.kappa.pi12)
-    
-    cond.est.kappa.all$pi_id_f = factor(cond.est.kappa.all$pi_id,
-                                        levels = c(0.3, 0.7, 1.2),
-                                        labels = c(TeX("$\\kappa_{\\pi} \\in \\[0.0, 0.4\\]$"), 
-                                                   TeX("$\\kappa_{\\pi} \\in (0.6, 0.8\\]$"),
-                                                   TeX("$\\kappa_{\\pi} \\in (1.1, 1.3\\]$")))
-    
-    lim.x = a[7, "Q3"] * 10
-    lim.y = a[8, "Q3"] * 10
-    
-    
-    cond.est.kappa.all %>%
-      # dplyr::filter(kappa_theta < 50 & kappa_mu < 5) %>%
-      ggplot(aes(kappa_mu, kappa_theta, col = disease, shape = disease)) +
-      geom_point() +
-      scale_shape_manual(name = "disease",values=c(16,1)) +
-      xlab(TeX('$\\kappa_\\mu$')) + 
-      ylab(TeX('$\\kappa_\\theta')) + 
-      # ylim(if(model == "zinb") c(0, 5) else c(0, 5)) + xlim(c(0, 2)) +
-      ylim(c(0, lim8)) + xlim(c(0, lim7)) +
-      scale_y_continuous(breaks = int_breaks) +
-      # ggtitle(TeX("(|$\\kappa_{\\mu}$|, |$\\kappa_{\\theta}$|, |$\\kappa_{\\pi}$|) estimates")) +
-      theme_bw() +
-      theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
-      facet_grid(rows = vars(pi_id_f), labeller = label_parsed) -> p3
-    
-    p3_all = plot_grid(p3_3d, p3, ncol = 1, nrow = 2, rel_heights = c(1, 2))
-    
-    ## combining altogether
-    plot_grid(
-      plotlist = list(p1_all, p2_all, p3_all),
-      ncol = 3, nrow = 1, labels = list("A", "B", "C")
-    ) -> p
-    
-    ggsave(paste0("figure/para_selection", DRNA.name, zoe.nm, "_", type, "_", model, "_", nrm, "_", n.samp.nm, ".png"),  p,  width = 10, height = 10)#, dpi = 200)
-    #dev.off()
-    
-    save(cond.est, cond.est.delta, cond.est.kappa, p, p1, p2, p3, file = sprintf("output/parameter_distn%s_%s_%s_%s_%s_%s.rda", zoe.nm, model, type, DRNA, nrm, n.samp.nm))
-    
+### Need to review this    
+    # ######## p3 (kappa)
+    # cond.est.kappa.batch1 <- 
+    #   dplyr::filter(cond.est, group %in% c("H1","D1"))
+    # cond.est.kappa.batch2 <- 
+    #   dplyr::filter(cond.est, group %in% c("H2","D2"))
+    # 
+    # cond.est.kappa <- 
+    #   cbind(b1 = cond.est.kappa.batch1, 
+    #         b2 = cond.est.kappa.batch2) %>%
+    #   mutate(kappa_pi = abs(qlogis(b1.pi) - qlogis(b2.pi)), 
+    #          kappa_mu = abs(log(b1.mu) - log(b2.mu)), 
+    #          kappa_theta = abs(log(b1.theta) - log(b2.theta)),
+    #          disease = ifelse(b1.disease == "D", "diseased", "healthy")) %>% 
+    #   dplyr::select("disease", "kappa_pi", "kappa_mu", "kappa_theta")
+    # 
+    # # A. ranges
+    # a[7, c("Q1", "Q2", "Q3")] <- cond.est.kappa$kappa_mu %>% summary %>% round(1) %>% "["(c(2,3,5))#  %>% paste(collapse = ", ")
+    # a[8, c("Q1", "Q2", "Q3")] <- cond.est.kappa$kappa_theta %>% summary %>% round(1) %>% "["(c(2,3,5))#  %>% paste(collapse = ", ")
+    # a[9, c("Q1", "Q2", "Q3")] <- cond.est.kappa$kappa_pi %>% "["(., is.finite(.)) %>% summary %>% round(1) %>% "["(c(2,3,5))#  %>% paste(collapse = ", ")
+    # 
+    # lim7 = min(max(cond.est.kappa$kappa_mu, na.rm = TRUE) * 1.05, a[7, "Q3"] * 5)
+    # lim8 = min(max(cond.est.kappa$kappa_theta, na.rm = TRUE) * 1.05, a[8, "Q3"] * 5)
+    # lim9 = min(max(cond.est.kappa$kappa_pi, na.rm = TRUE) * 1.05, a[9, "Q3"] * 5)
+    # 
+    # # B. 3d plots
+    # p3_3d <- ~{
+    #   lvls = c("diseased", "healthy")
+    #   shp = c(16, 1)
+    #   shp2 = cond.est.kappa$disease %>% factor(levels = lvls) %>% as.numeric() %>% "["(shp, .)
+    #   clr = c("#F8766D", "#00BFC4")
+    #   clr2 = cond.est.kappa$disease %>% factor(levels = lvls) %>% as.numeric() %>% "["(clr, .)
+    #   
+    #   Q3 = a[7:9, "Q3"]
+    #   s3d = 
+    #     scatterplot3d(cond.est.kappa[, c("kappa_pi", "kappa_theta", "kappa_mu")], angle = 55, 
+    #                   # main = "batch effect estimates",
+    #                   main = TeX("(|$\\kappa_{\\mu}$|, |$\\kappa_{\\theta}$|, |$\\kappa_{\\pi}$|) estimates"),
+    #                   xlab = expression(kappa[pi]),
+    #                   ylab = expression(kappa[theta]),
+    #                   zlab = expression(kappa[mu]),
+    #                   mar = c(2.5, 2.5, 2.5, 2.5),
+    #                   xlim = c(0, lim9), # pi
+    #                   ylim = c(0, lim8), # theta
+    #                   zlim = c(0, lim7), # mu
+    #                   pch = shp2, color = clr2, box = TRUE)
+    #   # legend(s3d$xyz.convert(Q3[3]*3, Q3[2]*5, Q3[1]*5), legend = lvls,
+    #   #        col =  clr, pch = shp, box.lwd = 0.1)
+    # }
+    # 
+    # 
+    # # C. sliced plots
+    # cond.est.kappa.pi03 <- cond.est.kappa %>% dplyr::filter (kappa_pi <= 0.4)
+    # cond.est.kappa.pi07 <- cond.est.kappa %>% dplyr::filter (kappa_pi > 0.6 & kappa_pi <= 0.8)
+    # cond.est.kappa.pi12 <- cond.est.kappa %>% dplyr::filter (kappa_pi > 1.1 & kappa_pi <= 1.3)
+    # cond.est.kappa.pi03$pi_id = 0.3
+    # cond.est.kappa.pi07$pi_id = 0.7
+    # cond.est.kappa.pi12$pi_id = 1.2
+    # 
+    # cond.est.kappa.all = rbind(cond.est.kappa.pi03, cond.est.kappa.pi07, cond.est.kappa.pi12)
+    # 
+    # cond.est.kappa.all$pi_id_f = factor(cond.est.kappa.all$pi_id,
+    #                                     levels = c(0.3, 0.7, 1.2),
+    #                                     labels = c(TeX("$\\kappa_{\\pi} \\in \\[0.0, 0.4\\]$"), 
+    #                                                TeX("$\\kappa_{\\pi} \\in (0.6, 0.8\\]$"),
+    #                                                TeX("$\\kappa_{\\pi} \\in (1.1, 1.3\\]$")))
+    # 
+    # lim.x = a[7, "Q3"] * 10
+    # lim.y = a[8, "Q3"] * 10
+    # 
+    # 
+    # cond.est.kappa.all %>%
+    #   # dplyr::filter(kappa_theta < 50 & kappa_mu < 5) %>%
+    #   ggplot(aes(kappa_mu, kappa_theta, col = disease, shape = disease)) +
+    #   geom_point() +
+    #   scale_shape_manual(name = "disease",values=c(16,1)) +
+    #   xlab(TeX('$\\kappa_\\mu$')) + 
+    #   ylab(TeX('$\\kappa_\\theta')) + 
+    #   # ylim(if(model == "zinb") c(0, 5) else c(0, 5)) + xlim(c(0, 2)) +
+    #   ylim(c(0, lim8)) + xlim(c(0, lim7)) +
+    #   scale_y_continuous(breaks = int_breaks) +
+    #   # ggtitle(TeX("(|$\\kappa_{\\mu}$|, |$\\kappa_{\\theta}$|, |$\\kappa_{\\pi}$|) estimates")) +
+    #   theme_bw() +
+    #   theme(plot.title = element_text(hjust = 0.5), legend.position="bottom") +
+    #   facet_grid(rows = vars(pi_id_f), labeller = label_parsed) -> p3
+    # 
+    # p3_all = plot_grid(p3_3d, p3, ncol = 1, nrow = 2, rel_heights = c(1, 2))
+    # 
+    # ## combining altogether
+    # plot_grid(
+    #   plotlist = list(p1_all, p2_all, p3_all),
+    #   ncol = 3, nrow = 1, labels = list("A", "B", "C")
+    # ) -> p
+    # 
+    # ggsave(paste0("figure/para_selection", DRNA.name, zoe.nm, "_", type, "_", model, "_", nrm, "_", n.samp.nm, ".png"),  p,  width = 10, height = 10)#, dpi = 200)
+    # #dev.off()
+    # 
+    # save(cond.est, cond.est.delta, cond.est.kappa, p, p1, p2, p3, file = sprintf("output/parameter_distn%s_%s_%s_%s_%s_%s.rda", zoe.nm, model, type, DRNA, nrm, n.samp.nm))
+    # 
     
     ####### printing out the summary.  
     cat("    \n")
     cat(type, " ", model, "\n")
     # print(a)
     print(xtable(a), include.rownames = F)
-  }
+  # }
 }
