@@ -51,8 +51,8 @@ model = "craft"
 ## To save the result
 # Check and create the folder
 save_path = paste0("output/")
-save_file.raw = paste0("output/raw-craft", zoe, "-nSig", n.signal, "-nGene", n.gene, "-", model, "-j", j, "-rep", sim, ".rds")
-save_file.stat = paste0("output/stat-craft", zoe, "-nSig", n.signal, "-nGene", n.gene, "-", model, "-j", j, "-rep", sim, ".rds")
+save_file.raw = paste0("output/raw-craft", zoe, "-", type, "-nSig", n.signal, "-nGene", n.gene, "-", model, "-j", j, "-rep", sim, ".rds")
+save_file.stat = paste0("output/stat-craft", zoe, "-", type, "-nSig", n.signal, "-nGene", n.gene, "-", model, "-j", j, "-rep", sim, ".rds")
 
 if (!dir.exists(save_path)) {message("No output folder detected. Creating one."); dir.create(save_path)}
 if (file.exists(save_file.stat)) stop("Already done")
