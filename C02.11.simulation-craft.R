@@ -51,8 +51,8 @@ model = "craft"
 ## To save the result
 # Check and create the folder
 save_path = paste0("output/")
-save_file.raw = paste0("output/raw-craft", zoe, "-nSig", n.signal, "-nGene", n.gene, "-", model, "-", j, ".rds")
-save_file.stat = paste0("output/stat-craft", zoe, "-nSig", n.signal, "-nGene", n.gene, "-", model, "-", j, ".rds")
+save_file.raw = paste0("output/raw-craft", zoe, "-nSig", n.signal, "-nGene", n.gene, "-", model, "-j", j, "-rep", sim, ".rds")
+save_file.stat = paste0("output/stat-craft", zoe, "-nSig", n.signal, "-nGene", n.gene, "-", model, "-j", j, "-rep", sim, ".rds")
 
 if (!dir.exists(save_path)) {message("No output folder detected. Creating one."); dir.create(save_path)}
 if (file.exists(save_file.stat)) stop("Already done")
@@ -84,8 +84,8 @@ if (zoe %in% 1:2) {
            group_disease = ifelse(cariesfree == 1, "H", "D"))
 } else {
   fn <- sprintf("Nature2019data/data.%s.DRNA.IBD.rds", type.full)
-  fn.est = sprintf("output/para_selection_est_NEWDATA_%s_ziln_tpm5.rds", type)
-  fn.delta = sprintf("output/para_delta_est%s_%s_%s_%s.rds", zoe.nm, type, "ziln", "tpm5")
+  fn.est = sprintf("output/para_selection_est_NEWDATA_%s_ziln_tpm5_samp%s.rds", type, "full")
+  fn.delta = sprintf("output/para_delta_est%s_%s_%s_%s_samp%s.rds", zoe.nm, type, "ziln", "tpm5", "full")
   dat.raw <- readRDS(fn)
   # dat.est <- readRDS(fn.est)
   cond.est.delta = readRDS(fn.delta)

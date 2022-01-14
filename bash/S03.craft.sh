@@ -8,14 +8,21 @@ for zoe in 1 2 3; do # ZILN
       elif [[ "$ttype" == "bact" ]]; then
         # For ZOE bact, n.gene = 300, n.signal = 30.
         for sim in {1..10}; do
-          sbatch --time=10:00:00 --mem 10000 bash/runR.sh C02.11.simulation-craft.R  $zoe $j $ttype $sim 30 300 1
+          sbatch --time=10:00:00 --mem=10000 bash/runR.sh C02.11.simulation-craft.R  $zoe $j $ttype $sim 30 300 1
         done;
       else
         # For ZOE gene and genebact, different n.gene and n.signal.
         for ngene in 10000 100000; do
+          if [[ "$ngene" == 100000 ]]; then
+            ttime = 60:00:00;
+            mmem = 30000
+          else 
+            ttime = 16:00:00
+            mmem = 10000
+          fi;
           for nsignal in 100 300 1000; do
             for sim in {1..10}; do
-              sbatch --time=16:00:00 --mem 10000 bash/runR.sh C02.11.simulation-craft.R  $zoe $j $ttype $sim $nsignal $ngene 1
+              sbatch --time=$ttime --mem=$mmem bash/runR.sh C02.11.simulation-craft.R  $zoe $j $ttype $sim $nsignal $ngene 1
             done;
           done;
         done;
