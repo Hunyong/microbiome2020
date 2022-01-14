@@ -1,4 +1,5 @@
-# core
+#!/bin/bash
+
 ttime = 10:00:00;
 mmem = 10000;
 for zoe in 1 2 3; do # ZILN
