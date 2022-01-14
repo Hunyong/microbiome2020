@@ -11,7 +11,7 @@ for zoe in 1 2 3; do # ZILN
       elif [[ "$ttype" == "bact" ]]; then
         # For ZOE bact, n.gene = 300, n.signal = 30.
         for sim in {1..10}; do
-          sbatch --time=${$ttime} --mem=${$mmem} bash/runR.sh C02.11.simulation-craft.R  $zoe $j $ttype $sim 30 300 1
+          sbatch --time=$ttime --mem=$mmem bash/runR.sh C02.11.simulation-craft.R  $zoe $j $ttype $sim 30 300 1
         done;
       else
         # For ZOE gene and genebact, different n.gene and n.signal.
