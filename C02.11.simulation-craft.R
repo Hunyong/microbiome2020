@@ -145,13 +145,34 @@ cat("Additional filtering after crafting: ", sum(!filtr), ".\n")
 cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), ".\n")
 
 # do the tests on the ramdon ZINB distribution we created
-result <- tester.set.HD.batch(data, n.gene=n.gene, ALDEX.skip = TRUE, SONGBIRD.skip = TRUE) 
+result <- tester.set.HD.batch(data, n.gene=n.gene, SONGBIRD.skip = TRUE) 
 result$nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
+
+# Marking the cutoff rank declared as discovery by LEfSe.
+attr(result, "cutoff.LEfSe") = max(result$pval["LFE", ], na.rm = TRUE)
+
 result$pval.cdf <- 
   result$pval %>% apply(1, function(x) {
     if (all(is.na(x))) rep(NA, length(cdf.cutoff)) else ecdf(x)(cdf.cutoff)
   }) %>% t
 attr(result$pval.cdf, "cutoff") = cdf.cutoff
+
+
+## Statistics needed for sensitivity and other metrics
+index.TP = 1:n.signal
+index.TN = (n.signal + 1):n.gene
+
+result$pval.cdf.TP <- 
+  result$pval[, index.TP] %>% apply(1, function(x) {
+    if (all(is.na(x))) rep(NA, length(cdf.cutoff)) else ecdf(x)(cdf.cutoff)
+  }) %>% t
+attr(result$pval.cdf.TP, "cutoff") = cdf.cutoff
+
+result$pval.cdf.TN <- 
+  result$pval[, index.TN] %>% apply(1, function(x) {
+    if (all(is.na(x))) rep(NA, length(cdf.cutoff)) else ecdf(x)(cdf.cutoff)
+  }) %>% t
+attr(result$pval.cdf.TN, "cutoff") = cdf.cutoff
 
 
 

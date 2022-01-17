@@ -819,7 +819,8 @@ LEfSe = function(data) {
   res_lefse$Names = res_lefse$Names %>% gsub("`", "", .) %>% as.character
   merged = left_join(data.frame(gene.name), res_lefse, by= c("gene.name" = "Names"))
   # merged$rank[which(is.na(merged$rank))] = max(merged$rank, na.rm = T) + 1
-  merged$rank[which(is.na(merged$rank))] = (max(merged$rank, na.rm = T) + length(merged$rank))/2
+  # merged$rank[which(is.na(merged$rank))] = (max(merged$rank, na.rm = T) + length(merged$rank))/2
+  merged$rank[which(is.na(merged$rank))] = NA # No rank provided for the rest.
   # ..... do tests here
   out = matrix(NA, nrow = length(gene.name), ncol = 2, dimnames = list(gene.name, c("Estimate", "pval")))
   out[, 1] = merged$scores # Insert the coefficients of n genes here!
