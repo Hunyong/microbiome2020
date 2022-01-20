@@ -14,4 +14,5 @@ BiocManager::install("BiocParallel")
 BiocManager::install("scran")
 BiocManager::install("lefser")
 BiocManager::install("ALDEx2")
+BiocManager::install("ffpe") # for CATplot
 # install.packages("/Users/hunyongcho/Downloads/lefser_1.0.0.tar.gz", repos = NULL, INSTALL_opts = c('--no-lock'))

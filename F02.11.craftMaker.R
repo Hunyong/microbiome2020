@@ -5,6 +5,7 @@ craft = function(otu.matrix, meanEffect, batchVec, n.signal, n.gene,
 #### low prevalence genes are already filtered out in otu.matrix.
   p = dim(otu.matrix)[1]
   n = dim(otu.matrix)[2]
+  effects = matrix(0, nrow = n.signal, ncol = 3, dimnames = list(1:n.signal, c("delta.mu", "delta.pi", "delta.theta")))
   
   ## 1. gene sampling (n.genes)
   if (1) {
@@ -67,6 +68,7 @@ craft = function(otu.matrix, meanEffect, batchVec, n.signal, n.gene,
     
     # 4.1 delta_pi
     d.pi = deltaSamp[i, "delta_pi"]
+    effects[i, "delta.pi"] = d.pi
     group.index.zero = lapply(group.index, function(x) otu.matrix[i, x] == 0)
     zero.prop = sapply(group.index.zero, mean) # D/H x batchs
     zero.prop.new = plogis(qlogis(zero.prop) + c(d.pi/2, -d.pi/2))
@@ -85,6 +87,7 @@ craft = function(otu.matrix, meanEffect, batchVec, n.signal, n.gene,
     
     # 4.2 delta_mu
     d.mu = deltaSamp[i, "delta_mu"]
+    effects[i, "delta.mu"] = d.mu
     otu.crafted[i, group.index[c(1,3)] %>% unlist] = otu.matrix[i,  group.index[c(1,3)] %>% unlist]  * exp(d.mu/2)
     otu.crafted[i, group.index[c(2,4)] %>% unlist] = otu.matrix[i,  group.index[c(2,4)] %>% unlist]  * exp(-d.mu/2)
   }
@@ -94,6 +97,7 @@ craft = function(otu.matrix, meanEffect, batchVec, n.signal, n.gene,
   names(dat)[1:n.gene] = paste0("y.", 1:n.gene)
   dat$sampleSum = dplyr::select(dat, -phenotype, -batch) %>% apply(1, sum)
   attr(dat, "gene.names") = rownames(otu.crafted)
+  attr(dat, "effects") = effects
   
   return(dat)
 }

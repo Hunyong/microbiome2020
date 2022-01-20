@@ -33,11 +33,17 @@ param <- function(scenario.delta, scenario.kappa, scenario.base = 1:dim(basePara
 
 r.sim <- function(n.sample = c(20, 20, 20, 20), n.genes = 1,
                   scenario.delta, scenario.kappa, scenario.base,
-                  baseParam, delta.table, kappa.table, model = "zinb", delta.perturb.prob = 0) {
+                  baseParam, delta.table, kappa.table, model = "zinb", 
+                  portion.signal, delta.perturb.prob = 0, i.null = 1) {
   
   require(dplyr); require(magrittr); require(tidyr)
   if (length(scenario.base)!=1) stop("length of scenario.base is not 1.")
+  n.signal = as.integer(n.genes * portion.signal)
   
+  param.set.no.signal = param (scenario.delta = i.null, scenario.kappa = scenario.kappa, 
+                               scenario.base = scenario.base,
+                               baseParam = baseParam, delta.table = delta.table, 
+                               kappa.table = kappa.table, flip.delta = 0)
   param.set.original = param (scenario.delta = scenario.delta, scenario.kappa = scenario.kappa, 
                      scenario.base = scenario.base,
                      baseParam = baseParam, delta.table = delta.table, 
@@ -56,18 +62,23 @@ r.sim <- function(n.sample = c(20, 20, 20, 20), n.genes = 1,
   #              cat = names(param.set)[s])
   #   })
   # dat = do.call(rbind, dat)
-  data.l <- function(flip.i = 0) {
-    param.set <- switch(flip.i + 1, param.set.original, param.set.flip)
+  data.l <- function(flip.i = 0, no.signal = FALSE) {
+    if (no.signal) {
+      param.set = param.set.no.signal
+    } else {
+      param.set <- switch(flip.i + 1, param.set.original, param.set.flip)
+    }
     lapply(1:length(param.set), function(s) generator(n = n.sample[s], param = param.set[[s]] %>% as.numeric)) %>% 
     {do.call(c, .)} 
   }
-  dat <- data.frame(y = sapply(1:n.genes, function(s) data.l(flip.bin[s])), 
+  dat <- data.frame(y = sapply(1:n.genes, function(s) data.l(flip.bin[s], no.signal = (s > n.signal))), 
                     cat = rep(names(param.set.original), times = n.sample))
   
   dat %>% 
     separate(col = cat, into = c("phenotype", "batch"), sep="\\.") %>% 
     mutate(phenotype = factor(phenotype), batch = factor(batch)) -> dat
   dat$sampleSum = dplyr::select(dat, -phenotype, -batch) %>% apply(1, sum)
+  attr(dat,  "n.signal") = n.signal
   return(dat)
 }
 
