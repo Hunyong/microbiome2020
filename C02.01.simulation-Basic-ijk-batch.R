@@ -187,6 +187,11 @@ for (i in rng) {
       }) %>% t
     attr(result$pval.cdf.TN, "cutoff") = cdf.cutoff
     
+    
+    ## Statistics needed for CATplot (concordance at top)
+    result$ranks.TP <- 
+      t(apply(result$pval[, index.TP], 1, function(x) ifelse(is.na(x), NA, order(x))))
+    
   
    if (FALSE) # This section is ignored. Jan 19, 2022.
      { ### More MAST, DESeq2, MGS replicates (M = 10 in total)
