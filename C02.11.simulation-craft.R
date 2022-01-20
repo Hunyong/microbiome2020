@@ -177,7 +177,7 @@ attr(result$pval.cdf.TN, "cutoff") = cdf.cutoff
 ## Statistics needed for CATplot (concordance at top)
 result$ranks.TP <- 
   t(apply(result$pval[, index.TP], 1, function(x) ifelse(is.na(x), NA, order(x))))
-
+attr(result$ranks.TP, "effects") = attr(data, "effects")
 
 
 #### statistics
