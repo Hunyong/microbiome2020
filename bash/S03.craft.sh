@@ -17,7 +17,7 @@ for zoe in 1 2 3; do # ZILN
         # For ZOE gene and genebact, different n.gene and n.signal.
         for ngene in 10000 100000; do
           if [[ "$ngene" == 100000 ]]; then
-            ttime=60:00:00
+            ttime=80:00:00
             mmem=30000
           else 
             ttime=16:00:00
