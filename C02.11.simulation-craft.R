@@ -148,14 +148,14 @@ cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), "
 result <- tester.set.HD.batch(data, n.gene=n.gene, SONGBIRD.skip = TRUE) 
 result$nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
 
-# Marking the cutoff rank declared as discovery by LEfSe.
-attr(result, "cutoff.LEfSe") = max(result$pval["LFE", ], na.rm = TRUE)
 
 result$pval.cdf <- 
   result$pval %>% apply(1, function(x) {
     if (all(is.na(x))) rep(NA, length(cdf.cutoff)) else ecdf(x)(cdf.cutoff)
   }) %>% t
 attr(result$pval.cdf, "cutoff") = cdf.cutoff
+# Marking the cutoff rank declared as discovery by LEfSe.
+attr(result$pval.cdf, "cutoff.LEfSe") = max(result$pval["LFE", ], na.rm = TRUE)
 
 
 ## Statistics needed for sensitivity and other metrics
@@ -210,7 +210,11 @@ gc()
 # Save the result
 stat.comb <- rbind(stat.power, stat.irregular, stat.na.prop)
 
-saveRDS(list(stat = stat.comb, cdf = result$pval.cdf, setting = setting.summary), save_file.stat)
+saveRDS(list(stat = stat.comb, cdf = result$pval.cdf, 
+             cdf.TP = pval.cdf.TP,
+             cdf.TN = pval.cdf.TN,
+             ranks.TP = ranks.TP,
+             setting = setting.summary), save_file.stat)
 if (!save.stat.only) saveRDS(result, save_file.raw)
 
 # # bookkeeping
