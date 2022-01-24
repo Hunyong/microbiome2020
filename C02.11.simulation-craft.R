@@ -91,7 +91,7 @@ if (zoe %in% 1:2) {
   cond.est.delta = readRDS(fn.delta)
   
   excluded.subject = dat.raw$meta$External.ID %in% "MSM9VZMA"
-  dat.raw$otu = dat.raw$otu[, !excluded.subject, 2]
+  dat.raw$otu = dat.raw$otu[, !excluded.subject, ]
   dat.raw$meta = dat.raw$meta[!excluded.subject, ]
   DataMeta = 
     dat.raw$meta %>% 
