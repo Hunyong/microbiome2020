@@ -211,9 +211,9 @@ gc()
 stat.comb <- rbind(stat.power, stat.irregular, stat.na.prop)
 
 saveRDS(list(stat = stat.comb, cdf = result$pval.cdf, 
-             cdf.TP = pval.cdf.TP,
-             cdf.TN = pval.cdf.TN,
-             ranks.TP = ranks.TP,
+             cdf.TP = result$pval.cdf.TP,
+             cdf.TN = result$pval.cdf.TN,
+             ranks.TP = result$ranks.TP,
              setting = setting.summary), save_file.stat)
 if (!save.stat.only) saveRDS(result, save_file.raw)
 
