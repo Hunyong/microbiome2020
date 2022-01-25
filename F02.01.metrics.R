@@ -3,8 +3,8 @@
 #' @example
 #' metrics(a$cdf.TP, a$cdf.TN, PN.rate = a$setting$n.signal / a$setting$n.gene, cutoff = 0.05) 
 metrics = function(cdf.TP, cdf.TN, PN.rate, cutoff = 0.05) {
-  sens = cdf.TP[, attr(cdf.TP, "cutoff") == 0.05]
-  fpr  = cdf.TN[, attr(cdf.TN, "cutoff") == 0.05]    # Type 1 error
+  sens = cdf.TP[, attr(cdf.TP, "cutoff") == cutoff]
+  fpr  = cdf.TN[, attr(cdf.TN, "cutoff") == cutoff]    # Type 1 error
   fdr  = fpr * (1 - PN.rate) / (sens * PN.rate + fpr * (1 - PN.rate))
   acc  = {sens * PN.rate + (1 - fdr) * (1 - PN.rate)}
   AUC  = auc(cdf.TP, cdf.TN)
