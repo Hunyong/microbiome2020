@@ -3,7 +3,7 @@
 #' @example
 #' metrics(a$cdf.TP, a$cdf.TN, PN.rate = a$setting$n.signal / a$setting$n.gene, cutoff = 0.05) 
 metrics = function(cdf.TP, cdf.TN, PN.rate, cutoff = 0.05) {
-  sens = cdf.TP[, attr(cdf.TP, "cutoff") == cutoff]
+  sens = cdf.TP[, attr(cdf.TP, "cutoff") == cutoff]    # Power
   fpr  = cdf.TN[, attr(cdf.TN, "cutoff") == cutoff]    # Type 1 error
   fdr  = fpr * (1 - PN.rate) / (sens * PN.rate + fpr * (1 - PN.rate))
   acc  = {sens * PN.rate + (1 - fdr) * (1 - PN.rate)}
