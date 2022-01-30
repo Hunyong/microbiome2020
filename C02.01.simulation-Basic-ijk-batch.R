@@ -9,8 +9,6 @@ source("F01.02.models-base.R")
 source("F01.02.models.R")
 source("F01.02.models-ANCOMBC.R")
 source("F01.02.summary.gamlss2.R")
-source("F02.01.metrics.R")
-
 library(MAST)
 library(coin)
 library(metagenomeSeq)
@@ -23,7 +21,7 @@ source("C01.02.simulation.setup.R")
 args = commandArgs(trailingOnly=TRUE)  # passed from script
 if (length(args) == 0) {
   warning("commandArgs() was not provided. Set as the default value.")
-  args = c(i = 1, j = 1, k = 1, model = 3, perturb = 5, n = 80, save.stat.only = 0, n.gene = 1000, portion.signal = 0.1)
+  args = c(i = 2, j = 1, k = 1, model = 3, perturb = 5, n = 80, save.stat.only = 1, n.gene = 1000)
 }
 cat("The Command Arg is: \n"); print(args)
 i = as.numeric(args[1])  # 1..10    delta effect
@@ -34,7 +32,7 @@ perturb = as.numeric(args[5]) # 5, 3, 0
 n = as.numeric(args[6])  # 80 800  sample size
 save.stat.only = as.logical(args[7]) # 1, 0
 n.gene = as.numeric(args[8]) # 1000 
-portion.signal = as.numeric(args[9]) # 0.1
+portion.signal = 0.01
 
 # nm1 = sprintf("tmp_%s_%s_%s_%s_pert%1.1f_n%s_s%s.txt", 1, j, k, model, perturb, n, 1) # bookkeeping
 
@@ -73,7 +71,7 @@ for (i in rng) {
   
     
     cat("i: ", i,", j: ",j,", k: ",k,", model: ", model, ", perturb: ", perturb, "\n")
-    cat("n = ", n,", stat.stat.only : ", save.stat.only,", n.gene: ",n.gene, "portion.signal: ", portion.signal, "\n")
+    cat("n = ", n,", stat.stat.only : ", save.stat.only,", n.gene: ",n.gene, "\n")
     
     # bookkeeping
     # library(dplyr)
@@ -94,8 +92,8 @@ for (i in rng) {
     ## To save the result
     # Check and create the folder
     save_path = paste0("output/")
-    save_file.raw = paste0("output/raw-n", n, "-pert", perturb, "-signal", portion.signal, "-", model, "-", i, ".", j, ".", k, ".rds")
-    save_file.stat = paste0("output/stat-n", n, "-pert", perturb, "-signal", portion.signal, "-", model, "-", i, ".", j, ".", k, ".rds")
+    save_file.raw = paste0("output/raw-n", n, "-pert", perturb, "-", model, "-", i, ".", j, ".", k, ".rds")
+    save_file.stat = paste0("output/stat-n", n, "-pert", perturb, "-", model, "-", i, ".", j, ".", k, ".rds")
     
     if (!dir.exists(save_path)) {message("No output folder detected. Creating one."); dir.create(save_path)}
     if (file.exists(save_file.stat)) {
@@ -193,7 +191,7 @@ for (i in rng) {
     ## Statistics needed for CATplot (concordance at top)
     result$ranks.TP <- 
       t(apply(result$pval[, index.TP], 1, function(x) ifelse(is.na(x), NA, order(x))))
-    result$metrics <- metrics(result$pval.cdf.TP, result$pval.cdf.TN, portion.signal)
+    
   
    if (FALSE) # This section is ignored. Jan 19, 2022.
      { ### More MAST, DESeq2, MGS replicates (M = 10 in total)
@@ -483,7 +481,7 @@ for (i in rng) {
 # Save the result
     stat.comb <- rbind(stat.power, stat.irregular, stat.na.prop)
     
-    saveRDS(list(stat = stat.comb, cdf = result$pval.cdf, metrics = result$metrics, setting = setting.summary), save_file.stat)
+    saveRDS(list(stat = stat.comb, cdf = result$pval.cdf, setting = setting.summary), save_file.stat)
     if (!save.stat.only) saveRDS(result, save_file.raw)
     
     # # bookkeeping
