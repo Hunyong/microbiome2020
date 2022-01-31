@@ -111,8 +111,8 @@ set.seed(seed.no)
 
 ### 0.2 Data
 survivors = dat.raw$otu[,, 2] %>% apply(1, function(x) mean(x > 0, na.rm = TRUE) > prev.filter)
-mean.total = dat.raw$otu[,, 2] %>% apply(2, sum) %>% mean
-scale = ifelse(mean.total < 10, 1e+6, 1) # For the IBD data in a compositional form, rescale it to a million.
+mean.TPM = dat.raw$otu[,, 2] %>% apply(2, mean) %>% mean
+scale = ifelse(mean.total < 1, 20, 1) # For the IBD data in a compositional form, rescale it to around 20 ~ 50 (= ZOE).
 # for ZOE 1, sum(survivors) = 98879
 data =
   craft (otu.matrix = dat.raw$otu[survivors,, 2] * scale, 
