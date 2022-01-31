@@ -111,9 +111,11 @@ set.seed(seed.no)
 
 ### 0.2 Data
 survivors = dat.raw$otu[,, 2] %>% apply(1, function(x) mean(x > 0, na.rm = TRUE) > prev.filter)
+mean.total = dat.raw$otu[,, 2] %>% apply(2, sum) %>% mean
+scale = ifelse(mean.total < 10, 1e+6, 1) # For the IBD data in a compositional form, rescale it to a million.
 # for ZOE 1, sum(survivors) = 98879
 data =
-  craft (otu.matrix = dat.raw$otu[survivors,, 2], 
+  craft (otu.matrix = dat.raw$otu[survivors,, 2] * scale, 
          meanEffect, batchVec = DataMeta$group_batch, 
          n.signal = n.signal, n.gene = n.gene, replace = F, 
          deltaMatrix = cond.est.delta, cut.delta.mu = 2, cut.delta.pi = NULL,
