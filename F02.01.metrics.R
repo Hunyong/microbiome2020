@@ -6,7 +6,7 @@ metrics = function(cdf.TP, cdf.TN, PN.rate, cutoff = 0.05) {
   sens = cdf.TP[, attr(cdf.TP, "cutoff") == cutoff]    # Power
   fpr  = cdf.TN[, attr(cdf.TN, "cutoff") == cutoff]    # Type 1 error
   fdr  = fpr * (1 - PN.rate) / (sens * PN.rate + fpr * (1 - PN.rate))
-  acc  = {sens * PN.rate + (1 - fdr) * (1 - PN.rate)}
+  acc  = {sens * PN.rate + (1 - fpr) * (1 - PN.rate)}
   AUC  = auc(cdf.TP, cdf.TN)
   
   output = data.frame(sensitivity = sens, type1error = fpr, FDR = fdr, accuracy = acc, AUC = AUC)
