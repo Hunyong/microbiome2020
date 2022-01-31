@@ -21,7 +21,7 @@ source("C01.02.simulation.setup.R")
 args = commandArgs(trailingOnly=TRUE)  # passed from script
 if (length(args) == 0) {
   warning("commandArgs() was not provided. Set as the default value.")
-  args = c(i = 1, j = 1, k = 1, model = 3, perturb = 5, n = 80, save.stat.only = 1, n.gene = 1000)
+  args = c(i = 2, j = 1, k = 1, model = 3, perturb = 5, n = 80, save.stat.only = 1, n.gene = 1000)
 }
 cat("The Command Arg is: \n"); print(args)
 i = as.numeric(args[1])  # 1..10    delta effect
