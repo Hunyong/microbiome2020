@@ -112,7 +112,8 @@ set.seed(seed.no)
 ### 0.2 Data
 survivors = dat.raw$otu[,, 2] %>% apply(1, function(x) mean(x > 0, na.rm = TRUE) > prev.filter)
 mean.TPM = dat.raw$otu[,, 2] %>% apply(2, mean) %>% mean
-scale = ifelse(mean.total < 1, 20, 1) # For the IBD data in a compositional form, rescale it to around 20 ~ 50 (= ZOE).
+# For the IBD data, total reads per subject = 13 million reads. With 1.12 million genes, one gene has average expression level of 11.6
+scale = ifelse(mean.TPM < 1, 11.6 / mean.TPM, 1) 
 # for ZOE 1, sum(survivors) = 98879
 data =
   craft (otu.matrix = dat.raw$otu[survivors,, 2] * scale, 
@@ -148,8 +149,8 @@ cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), "
 
 # do the tests on the ramdon ZINB distribution we created
 result <- tester.set.HD.batch(data, n.gene=n.gene, SONGBIRD.skip = TRUE) 
-result$nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
 
+result$nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
 
 result$pval.cdf <- 
   result$pval %>% apply(1, function(x) {
@@ -176,9 +177,27 @@ result$pval.cdf.TN <-
   }) %>% t
 attr(result$pval.cdf.TN, "cutoff") = cdf.cutoff
 
+cdf.cutoff.q = c(0, 0.01, 0.025, 0.05, 0.075, 0.10, 0.15, 0.2, 0.3)
+## q-values for FDR
+result$qval = t(apply(result$pval, 1, function(x) p.adjust(x, method = "fdr")))
+result$qval.cdf.TP <- 
+  result$qval[, index.TP] %>% apply(1, function(x) {
+    if (all(is.na(x))) rep(NA, length(cdf.cutoff.q)) else ecdf(x)(cdf.cutoff.q)
+  }) %>% t
+attr(result$qval.cdf.TP, "cutoff") = cdf.cutoff.q
+
+result$qval.cdf.TN <- 
+  result$qval[, index.TN] %>% apply(1, function(x) {
+    if (all(is.na(x))) rep(NA, length(cdf.cutoff.q)) else ecdf(x)(cdf.cutoff.q)
+  }) %>% t
+attr(result$qval.cdf.TN, "cutoff") = cdf.cutoff.q
+
+
 ## Statistics needed for CATplot (concordance at top)
+# result$ranks.TP <- 
+#   t(apply(result$pval[, index.TP], 1, function(x) ifelse(is.na(x), NA, order(x))))
 result$ranks.TP <- 
-  t(apply(result$pval[, index.TP], 1, function(x) ifelse(is.na(x), NA, order(x))))
+  t(apply(result$pval, 1, function(x) ifelse(is.na(x), NA, rank(x))))[, index.TP]
 attr(result$ranks.TP, "effects") = attr(data, "effects")
 
 
@@ -216,6 +235,8 @@ saveRDS(list(stat = stat.comb, cdf = result$pval.cdf,
              cdf.TP = result$pval.cdf.TP,
              cdf.TN = result$pval.cdf.TN,
              ranks.TP = result$ranks.TP,
+             cdf.TN.q = result$qval.cdf.TN,
+             cdf.TP.q = result$qval.cdf.TP,
              setting = setting.summary), save_file.stat)
 if (!save.stat.only) saveRDS(result, save_file.raw)
 

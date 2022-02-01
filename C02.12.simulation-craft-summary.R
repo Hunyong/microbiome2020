@@ -22,12 +22,14 @@ for (zoe in 1:3) {
   }
 }
 result %>% 
-  filter(n.signal == 300) %>% 
+  filter(n.gene == 10000) %>% 
+  filter(n.signal == 300) %>%
   ggplot(aes(method, value, col = method, group = method)) +
   geom_point() +
-  facet_grid(metric ~ factor(n.signal)) +
+  facet_grid(metric ~ factor(n.signal) + zoe, scales = "free_y") +
+  geom_hline(data = data.frame(metric = "type1error"), col = "red", yintercept = 0.05, mapping = "metric") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90))
-
+ggsve()
 
 

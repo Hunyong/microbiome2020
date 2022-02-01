@@ -1,10 +1,12 @@
 ### functions for sensitivity, FDR, accuracy, etc.
 
 #' @example
+#' a = readRDS("output/stat-craft1-gene-nSig100-nGene10000-j2-rep1.rds")
 #' metrics(a$cdf.TP, a$cdf.TN, PN.rate = a$setting$n.signal / a$setting$n.gene, cutoff = 0.05) 
 metrics = function(cdf.TP, cdf.TN, PN.rate, cutoff = 0.05) {
   sens = cdf.TP[, attr(cdf.TP, "cutoff") == cutoff]    # Power
   fpr  = cdf.TN[, attr(cdf.TN, "cutoff") == cutoff]    # Type 1 error
+  # cdf  = cdf.TP * PN.rate + cdf.TN * (1 - PN.rate)
   fdr  = fpr * (1 - PN.rate) / (sens * PN.rate + fpr * (1 - PN.rate))
   acc  = {sens * PN.rate + (1 - fpr) * (1 - PN.rate)}
   AUC  = auc(cdf.TP, cdf.TN)
