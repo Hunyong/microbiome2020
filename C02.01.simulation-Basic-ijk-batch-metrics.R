@@ -190,6 +190,22 @@ for (i in rng) {
     attr(result$pval.cdf.TN, "cutoff") = cdf.cutoff
     
     
+    cdf.cutoff.q = c(0, 0.01, 0.025, 0.05, 0.075, 0.10, 0.15, 0.2, 0.3)
+    ## q-values for FDR
+    result$qval = t(apply(result$pval, 1, function(x) p.adjust(x, method = "fdr")))
+    result$qval.cdf.TP <- 
+      result$qval[, index.TP] %>% apply(1, function(x) {
+        if (all(is.na(x))) rep(NA, length(cdf.cutoff.q)) else ecdf(x)(cdf.cutoff.q)
+      }) %>% t
+    attr(result$qval.cdf.TP, "cutoff") = cdf.cutoff.q
+    
+    result$qval.cdf.TN <- 
+      result$qval[, index.TN] %>% apply(1, function(x) {
+        if (all(is.na(x))) rep(NA, length(cdf.cutoff.q)) else ecdf(x)(cdf.cutoff.q)
+      }) %>% t
+    attr(result$qval.cdf.TN, "cutoff") = cdf.cutoff.q
+    
+    
     ## Statistics needed for CATplot (concordance at top)
     result$ranks.TP <- 
       t(apply(result$pval[, index.TP], 1, function(x) ifelse(is.na(x), NA, order(x))))
