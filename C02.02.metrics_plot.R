@@ -6,10 +6,10 @@ source("C01.02.simulation.setup.R")
 
 #### power plot####
 
-metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "type1error", delta.base = TRUE,
+metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "type1error", delta.base = TRUE, qval = FALSE,
                         fn = paste0(
                           "figure/", model, "_", metrics.name, "_size", size, if (!delta.base) "_effectSize(no_batch)",
-                          if (include.null) "_with_null", ".pdf"
+                          if (include.null) "_with_null", if (qval) "_qval", ".pdf"
                         ),
                         res.tmp = TRUE, include.null = FALSE, stop.if.absent = TRUE) {
   require(tidyr)
@@ -89,7 +89,8 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
         fn.tmp <- paste0("output/stat-n", size, "-pert0.5-signal0.1-", model, "-", i, ".", j, ".", k, ".rds")
         if (file.exists(fn.tmp)) {
           result <- readRDS(fn.tmp)
-          result.metrics <- data.frame(result$metrics %>% t())
+          if (qval) result.metrics <- data.frame(result$metrics[["qval"]] %>% t()); else result.metrics <- data.frame(result$metrics[["pval"]] %>% t())
+          
 
           tmp <-
             result.metrics %>%
@@ -281,7 +282,7 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
         fn.tmp <- paste0("output/stat-n", size, "-pert0.5-signal0.1-", model, "-", i, ".", j, ".", k, ".rds")
         if (file.exists(fn.tmp)) {
           result <- readRDS(fn.tmp)
-          result.metrics <- data.frame(result$metrics %>% t())
+          if (qval) result.metrics <- data.frame(result$metrics[["qval"]] %>% t()); else result.metrics <- data.frame(result$metrics[["pval"]] %>% t())
 
           tmp <-
             result.metrics %>%

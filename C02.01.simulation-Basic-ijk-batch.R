@@ -158,7 +158,7 @@ for (i in rng) {
     cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), ".\n")
     
     # do the tests on the ramdon ZINB distribution we created
-    result <- tester.set.HD.batch(data, n.gene=n.gene, LEfSe.skip = TRUE) 
+    result <- tester.set.HD.batch(data, n.gene=n.gene, LEfSe.skip = TRUE, LB.skip = TRUE, ALDEX.skip = TRUE) 
                                   # suppressWarnWagner = TRUE, # if not suppressed, the slurm-out file size explodes.
                                   # LB.skip = F,LN.skip = F, MAST.skip = F,
                                   # KW.skip = F, Wg.skip = F, De2.skip = F, WRS.skip = F,
@@ -209,8 +209,10 @@ for (i in rng) {
     ## Statistics needed for CATplot (concordance at top)
     result$ranks.TP <- 
       t(apply(result$pval[, index.TP], 1, function(x) ifelse(is.na(x), NA, order(x))))
-    result$metrics <- metrics(result$pval.cdf.TP, result$pval.cdf.TN, portion.signal)
-  
+    result$pval.metrics <- metrics(result$pval.cdf.TP, result$pval.cdf.TN, portion.signal)
+    result$qval.metrics <- metrics(result$qval.cdf.TP, result$qval.cdf.TN, portion.signal)
+    result.metrics <- list("pval" = result$pval.metrics, "qval" = result$qval.metrics)
+
    if (FALSE) # This section is ignored. Jan 19, 2022.
      { ### More MAST, DESeq2, MGS replicates (M = 10 in total)
           result.MGS <- result.DS2ZI <- result.DS2 <- result.MAST <- 
@@ -499,7 +501,7 @@ for (i in rng) {
 # Save the result
     stat.comb <- rbind(stat.power, stat.irregular, stat.na.prop)
     
-    saveRDS(list(stat = stat.comb, cdf = result$pval.cdf, metrics = result$metrics, setting = setting.summary), save_file.stat)
+    saveRDS(list(stat = stat.comb, cdf = result$pval.cdf, metrics = result.metrics, setting = setting.summary), save_file.stat)
     if (!save.stat.only) saveRDS(result, save_file.raw)
     
     # # bookkeeping

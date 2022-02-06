@@ -3,3 +3,7 @@ Report
 figure
 tmp*
 Rplots.pdf
+.DS_Store
+*.Rproj*
+test*
+res*
