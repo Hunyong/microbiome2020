@@ -1,8 +1,11 @@
 ### Functions for evaluating craft data
 
-tab.metrics = function(zoe, type, n.signal, n.gene, reps = 1:10, suppressMsg = FALSE, cutoff = 0.05) {
+tab.metrics = function(zoe, type, n.signal, n.gene, reps = 1:10, suppressMsg = FALSE, cutoff = 0.05, BH.correction = FALSE) {
   require(dplyr)
   require(abind)
+  
+  cdf.nm = c("cdf.TP", "cdf.TN")
+  if (BH.correction) cdf.nm = paste0(cdf.nm, ".q")
   
   individual.tables = 
     lapply(reps, function(l) {
@@ -13,7 +16,7 @@ tab.metrics = function(zoe, type, n.signal, n.gene, reps = 1:10, suppressMsg = F
         NULL
       } else {
         a = readRDS(fn)
-        metrics(a$cdf.TP, a$cdf.TN, PN.rate = a$setting$n.signal / a$setting$n.gene, cutoff = cutoff)
+        metrics(a[[cdf.nm[1]]], a[[cdf.nm[2]]], PN.rate = a$setting$n.signal / a$setting$n.gene, cutoff = cutoff)
       }
     })
   if (all(sapply(individual.tables, is.null))) return(NULL)
