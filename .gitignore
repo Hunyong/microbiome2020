@@ -1,6 +1,6 @@
 output*
 Report
-figure
+figure*
 tmp*
 Rplots.pdf
 .DS_Store
@@ -8,3 +8,4 @@ Rplots.pdf
 test*
 res*
 *.zip
+NA*

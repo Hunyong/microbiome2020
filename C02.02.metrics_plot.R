@@ -101,9 +101,8 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
             ) %>%
             dplyr::select(
               "LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS",
-              "ANCOM", "i", "j", "k", "batch", "effect"
+              "ANCOM", "ALDEX", "i", "j", "k", "batch", "effect"
             )
-
           res <- rbind(res, tmp[dict[[metrics.name]], ])
         } else {
           if (stop.if.absent) stop("Not available")
@@ -116,11 +115,11 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
   res <- res %>%
     gather(
       key = "method", value = "metrics",
-      `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`
+      `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`, `ALDEX`
     )
   res$method_f <- factor(res$method,
-    levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II"),
-    labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II")
+    levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "ALDEX"),
+    labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "ALDEX")
   )
   res$batch_f <- factor(res$batch, levels = batch.levels, labels = batch.labels)
   res$effect_f <- factor(res$effect, levels = disease.levels, labels = disease.labels)
@@ -129,6 +128,13 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
   #     & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
   res$k <- factor(res$k)
   if (res.tmp) res.tmp <<- res
+
+  NA_row <- res %>% filter(is.na(metrics))
+  NA_row_fn <- paste0(
+    "NA_row/", model, "_", metrics.name, "_size", size, if (!delta.base) "_effectSize(no_batch)",
+    if (include.null) "_with_null", ".csv"
+  )
+  write.csv(NA_row, NA_row_fn)
 
   res %>%
     ggplot(aes(k, metrics, fill = batch_f)) +
@@ -184,18 +190,18 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
 
 # modify to add the head points!!!!
 
-metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "sensitivity")
-metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "type1error")
-metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "FDR")
-metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "accuracy")
-metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "AUC")
+# metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "sensitivity")
+# metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "type1error")
+# metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "FDR")
+# metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "accuracy")
+# metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "AUC")
 
 
-metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "sensitivity")
-metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "type1error")
-metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "FDR")
-metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "accuracy")
-metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "AUC")
+# metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "sensitivity")
+# metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "type1error")
+# metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "FDR")
+# metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "accuracy")
+# metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "AUC")
 
 
 metricsplot_single_effect <- function(model, size, width = 12, height = 8, metrics.c = c("sensitivity", "type1error", "FDR", "accuracy", "AUC"), input.effect = "Effect_mu(D>H)", delta.base = TRUE,
@@ -293,7 +299,7 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
             ) %>%
             dplyr::select(
               "LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS",
-              "ANCOM", "i", "j", "k", "batch", "effect"
+              "ANCOM", "ALDEX", "i", "j", "k", "batch", "effect"
             )
 
           for (metrics in metrics.c) {
@@ -311,12 +317,12 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
   res <- res %>%
     gather(
       key = "method", value = "value",
-      `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`
+      `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`, `ALDEX`
     ) %>%
     filter(effect == input.effect)
   res$method_f <- factor(res$method,
-    levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II"),
-    labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II")
+    levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "ALDEX"),
+    labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "ALDEX")
   )
   res$batch_f <- factor(res$batch, levels = batch.levels, labels = batch.labels)
   res$effect_f <- factor(res$effect, levels = disease.levels, labels = disease.labels)
@@ -326,6 +332,13 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
   #     & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
   res$k <- factor(res$k)
   if (res.tmp) res.tmp <<- res
+
+  NA_row <- res %>% filter(is.na(value))
+  NA_row_fn <- paste0(
+    "NA_row/", model, "_", input.effect, "_size", size, if (!delta.base) "_effectSize(no_batch)",
+    if (include.null) "_with_null", ".csv"
+  )
+  write.csv(NA_row, NA_row_fn)
 
   res %>%
     ggplot(aes(k, value, fill = batch_f)) +
@@ -392,4 +405,3 @@ metricsplot_single_effect(model = "ziln", size = 80, stop.if.absent = FALSE, inp
 metricsplot_single_effect(model = "ziln", size = 80, stop.if.absent = FALSE, input.effect = "Effect_pi(D<H)")
 metricsplot_single_effect(model = "ziln", size = 80, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H).pi(D<H)")
 metricsplot_single_effect(model = "ziln", size = 80, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H),pi(D>H)")
-
