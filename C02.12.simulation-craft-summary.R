@@ -24,7 +24,7 @@
 ### 2. Collection
   result = NULL
   for (zoe in 1:3) {
-    for(n.gene in c(1e+4, 1e+5)) {
+    for(n.gene in c("10000")) { # "1e+05"
       for(n.signal in c(100, 300, 1000)) {
         for (BH in c(TRUE, FALSE)) {
           result.tmp =
@@ -45,7 +45,7 @@
   
 ### 3. plots
   result %>% 
-    filter(n.gene == 10000) %>% 
+    filter(n.gene == "10000") %>% 
     filter(n.signal %in% c(100, 1000)) %>%
     mutate(method = factor(method, levels = methods.levels, labels = methods.labels),
            study = factor(study.nm[zoe], levels = study.nm),
