@@ -1,6 +1,7 @@
 library(tidyverse)
 library(latex2exp)
 library(ggh4x) # for nested facetting
+library(ggrepel)
 source("C01.02.simulation.setup.R")
 
 
@@ -129,12 +130,12 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
   res$k <- factor(res$k)
   if (res.tmp) res.tmp <<- res
 
-  NA_row <- res %>% filter(is.na(metrics))
-  NA_row_fn <- paste0(
-    "NA_row/", model, "_", metrics.name, "_size", size, if (!delta.base) "_effectSize(no_batch)",
-    if (include.null) "_with_null", ".csv"
-  )
-  write.csv(NA_row, NA_row_fn)
+  # NA_row <- res %>% filter(is.na(metrics))
+  # NA_row_fn <- paste0(
+  #   "NA_row/", model, "_", metrics.name, "_size", size, if (!delta.base) "_effectSize(no_batch)",
+  #   if (include.null) "_with_null", ".csv"
+  # )
+  # write.csv(NA_row, NA_row_fn)
 
   res %>%
     ggplot(aes(k, metrics, fill = batch_f)) +
@@ -327,25 +328,28 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
   res$batch_f <- factor(res$batch, levels = batch.levels, labels = batch.labels)
   res$effect_f <- factor(res$effect, levels = disease.levels, labels = disease.labels)
   res$metrics_f <- factor(res$metrics, levels = metrics.c, labels = metrics.c)
+  res$is_NA <- is.na(res$value)
+  res <- res %>% mutate(is_NA = replace(is_NA, is_NA==TRUE, "X")) %>% mutate(is_NA = replace(is_NA, is_NA==FALSE, NA))
+  res <- res %>% mutate(value = ifelse(is.na(value), 0, value))
+
   if (!delta.base) res$effect2_f <- factor(res$effect, levels = disease.levels, labels = disease2.labels)
   # res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz")
   #     & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
   res$k <- factor(res$k)
   if (res.tmp) res.tmp <<- res
 
-  NA_row <- res %>% filter(is.na(value))
-  NA_row_fn <- paste0(
-    "NA_row/", model, "_", input.effect, "_size", size, if (!delta.base) "_effectSize(no_batch)",
-    if (include.null) "_with_null", ".csv"
-  )
-  write.csv(NA_row, NA_row_fn)
+  # NA_row <- res %>% filter(value > 0.95 & metrics == "FDR")
+  # NA_row_fn <- paste0(
+  #   "NA_row/", model, "_", input.effect, "_size", size, if (!delta.base) "_effectSize(no_batch)",
+  #   if (include.null) "_with_null", ".csv"
+  # )
+  # write.csv(NA_row, NA_row_fn)
 
   res %>%
     ggplot(aes(k, value, fill = batch_f)) +
     geom_bar(stat = "identity", position = position_dodge(width = .8)) +
     geom_hline(yintercept = 0.05, col = "black", linetype = 2) +
     ylim(c(0, 1)) +
-    # geom_point(aes(col = batch_f), position = position_dodge(width = .8), shape = 15, size = 0.1) +
     theme_bw() +
     theme(legend.position = "none", axis.text.x = element_text(angle = 90)) +
     scale_x_discrete(labels = param.k) +
@@ -374,6 +378,7 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
         scale_color_manual(values = c("K1 (0, 0, 0)" = "dodgerblue"))
       }
     } +
+    geom_text_repel(aes(label = is_NA), size = 2, color = "#a14523", hjust = 0.25) +
     {
       if (!delta.base) guides(fill = FALSE, color = FALSE)
     } +
