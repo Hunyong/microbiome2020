@@ -1,15 +1,16 @@
 library(tidyverse)
 library(latex2exp)
 library(ggh4x) # for nested facetting
+library(ggrepel)
 source("C01.02.simulation.setup.R")
 
 
 #### power plot####
 
-metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "type1error", delta.base = TRUE, qval = FALSE,
+metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "type1error", delta.base = TRUE,
                         fn = paste0(
                           "figure/", model, "_", metrics.name, "_size", size, if (!delta.base) "_effectSize(no_batch)",
-                          if (include.null) "_with_null", if (qval) "_qval", ".pdf"
+                          if (include.null) "_with_null", ".pdf"
                         ),
                         res.tmp = TRUE, include.null = FALSE, stop.if.absent = TRUE) {
   require(tidyr)
@@ -89,8 +90,7 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
         fn.tmp <- paste0("output/stat-n", size, "-pert0.5-signal0.1-", model, "-", i, ".", j, ".", k, ".rds")
         if (file.exists(fn.tmp)) {
           result <- readRDS(fn.tmp)
-          if (qval) result.metrics <- data.frame(result$metrics[["qval"]] %>% t()) else result.metrics <- data.frame(result$metrics[["pval"]] %>% t())
-          
+          result.metrics <- data.frame(result$metrics[["pval"]] %>% mutate("FDR" = result$metrics[["qval"]]$FDR) %>% t())
 
           tmp <-
             result.metrics %>%
@@ -102,9 +102,8 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
             ) %>%
             dplyr::select(
               "LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS",
-              "ANCOM", "i", "j", "k", "batch", "effect"
+              "ANCOM", "ALDEX", "i", "j", "k", "batch", "effect"
             )
-
           res <- rbind(res, tmp[dict[[metrics.name]], ])
         } else {
           if (stop.if.absent) stop("Not available")
@@ -117,11 +116,11 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
   res <- res %>%
     gather(
       key = "method", value = "metrics",
-      `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`
+      `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`, `ALDEX`
     )
   res$method_f <- factor(res$method,
-    levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II"),
-    labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II")
+    levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "ALDEX"),
+    labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "ALDEX")
   )
   res$batch_f <- factor(res$batch, levels = batch.levels, labels = batch.labels)
   res$effect_f <- factor(res$effect, levels = disease.levels, labels = disease.labels)
@@ -130,6 +129,13 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
   #     & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
   res$k <- factor(res$k)
   if (res.tmp) res.tmp <<- res
+
+  # NA_row <- res %>% filter(is.na(metrics))
+  # NA_row_fn <- paste0(
+  #   "NA_row/", model, "_", metrics.name, "_size", size, if (!delta.base) "_effectSize(no_batch)",
+  #   if (include.null) "_with_null", ".csv"
+  # )
+  # write.csv(NA_row, NA_row_fn)
 
   res %>%
     ggplot(aes(k, metrics, fill = batch_f)) +
@@ -168,7 +174,7 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
     {
       if (!delta.base) guides(fill = FALSE, color = FALSE)
     } +
-    xlab(expression("baseline (" * mu ~ ", " * theta * ", " * pi * ")")) +
+    xlab(expression("baseline (" * mu * ", " * theta * ", " * pi * ")")) +
     ylab(metrics.name) +
     guides(col = FALSE) +
     {
@@ -185,35 +191,24 @@ metricsplot <- function(model, size, width = 12, height = 8, metrics.name = "typ
 
 # modify to add the head points!!!!
 
-metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "sensitivity")
-metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "type1error")
-metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "FDR")
-metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "accuracy")
-metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "AUC")
-
-metricsplot(model = "ziln", size = 400, qval = TRUE, stop.if.absent = FALSE, metrics.name = "sensitivity")
-metricsplot(model = "ziln", size = 400, qval = TRUE, stop.if.absent = FALSE, metrics.name = "type1error")
-metricsplot(model = "ziln", size = 400, qval = TRUE, stop.if.absent = FALSE, metrics.name = "FDR")
-metricsplot(model = "ziln", size = 400, qval = TRUE, stop.if.absent = FALSE, metrics.name = "accuracy")
-metricsplot(model = "ziln", size = 400, qval = TRUE, stop.if.absent = FALSE, metrics.name = "AUC")
-
-metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "sensitivity")
-metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "type1error")
-metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "FDR")
-metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "accuracy")
-metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "AUC")
-
-metricsplot(model = "ziln", size = 80, qval = TRUE, stop.if.absent = FALSE, metrics.name = "sensitivity")
-metricsplot(model = "ziln", size = 80, qval = TRUE, stop.if.absent = FALSE, metrics.name = "type1error")
-metricsplot(model = "ziln", size = 80, qval = TRUE, stop.if.absent = FALSE, metrics.name = "FDR")
-metricsplot(model = "ziln", size = 80, qval = TRUE, stop.if.absent = FALSE, metrics.name = "accuracy")
-metricsplot(model = "ziln", size = 80, qval = TRUE, stop.if.absent = FALSE, metrics.name = "AUC")
+# metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "sensitivity")
+# metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "type1error")
+# metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "FDR")
+# metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "accuracy")
+# metricsplot(model = "ziln", size = 400, stop.if.absent = FALSE, metrics.name = "AUC")
 
 
-metricsplot_single_effect <- function(model, size, width = 12, height = 8, metrics.c = c("sensitivity", "type1error", "FDR", "accuracy", "AUC"), input.effect = "Effect_mu(D>H)", delta.base = TRUE,  qval = FALSE,
+# metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "sensitivity")
+# metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "type1error")
+# metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "FDR")
+# metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "accuracy")
+# metricsplot(model = "ziln", size = 80, stop.if.absent = FALSE, metrics.name = "AUC")
+
+
+metricsplot_single_effect <- function(model, size, width = 12, height = 8, metrics.c = c("sensitivity", "type1error", "FDR", "accuracy", "AUC"), input.effect = "Effect_mu(D>H)", delta.base = TRUE,
                                       fn = paste0(
                                         "figure/", model, "_", input.effect, "_size", size, if (!delta.base) "_effectSize(no_batch)",
-                                        if (include.null) "_with_null", if (qval) "_qval", ".pdf"
+                                        if (include.null) "_with_null", ".pdf"
                                       ),
                                       res.tmp = TRUE, include.null = FALSE, stop.if.absent = TRUE) {
   require(tidyr)
@@ -293,7 +288,7 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
         fn.tmp <- paste0("output/stat-n", size, "-pert0.5-signal0.1-", model, "-", i, ".", j, ".", k, ".rds")
         if (file.exists(fn.tmp)) {
           result <- readRDS(fn.tmp)
-          if (qval) result.metrics <- data.frame(result$metrics[["qval"]] %>% t()) else result.metrics <- data.frame(result$metrics[["pval"]] %>% t())
+          result.metrics <- data.frame(result$metrics[["pval"]] %>% mutate("FDR" = result$metrics[["qval"]]$FDR) %>% t())
 
           tmp <-
             result.metrics %>%
@@ -305,7 +300,7 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
             ) %>%
             dplyr::select(
               "LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS",
-              "ANCOM", "i", "j", "k", "batch", "effect"
+              "ANCOM", "ALDEX", "i", "j", "k", "batch", "effect"
             )
 
           for (metrics in metrics.c) {
@@ -323,28 +318,38 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
   res <- res %>%
     gather(
       key = "method", value = "value",
-      `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`
+      `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`, `ALDEX`
     ) %>%
     filter(effect == input.effect)
   res$method_f <- factor(res$method,
-    levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II"),
-    labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II")
+    levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "ALDEX"),
+    labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "ALDEX")
   )
   res$batch_f <- factor(res$batch, levels = batch.levels, labels = batch.labels)
   res$effect_f <- factor(res$effect, levels = disease.levels, labels = disease.labels)
   res$metrics_f <- factor(res$metrics, levels = metrics.c, labels = metrics.c)
+  res$is_NA <- is.na(res$value)
+  res <- res %>% mutate(is_NA = replace(is_NA, is_NA==TRUE, "X")) %>% mutate(is_NA = replace(is_NA, is_NA==FALSE, NA))
+  res <- res %>% mutate(value = ifelse(is.na(value), 0, value))
+
   if (!delta.base) res$effect2_f <- factor(res$effect, levels = disease.levels, labels = disease2.labels)
   # res[res$method %in% c("MGS", "ANCOM", "ANCOM.sz")
   #     & res$j != 1, "p.value"] <- NA #NA for MGS, ANCOM, and ANCOM.sz with batch effects
   res$k <- factor(res$k)
   if (res.tmp) res.tmp <<- res
 
+  # NA_row <- res %>% filter(value > 0.95 & metrics == "FDR")
+  # NA_row_fn <- paste0(
+  #   "NA_row/", model, "_", input.effect, "_size", size, if (!delta.base) "_effectSize(no_batch)",
+  #   if (include.null) "_with_null", ".csv"
+  # )
+  # write.csv(NA_row, NA_row_fn)
+
   res %>%
     ggplot(aes(k, value, fill = batch_f)) +
     geom_bar(stat = "identity", position = position_dodge(width = .8)) +
     geom_hline(yintercept = 0.05, col = "black", linetype = 2) +
     ylim(c(0, 1)) +
-    # geom_point(aes(col = batch_f), position = position_dodge(width = .8), shape = 15, size = 0.1) +
     theme_bw() +
     theme(legend.position = "none", axis.text.x = element_text(angle = 90)) +
     scale_x_discrete(labels = param.k) +
@@ -373,10 +378,11 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
         scale_color_manual(values = c("K1 (0, 0, 0)" = "dodgerblue"))
       }
     } +
+    geom_text_repel(aes(label = is_NA), size = 2, color = "#a14523", hjust = 0.25) +
     {
       if (!delta.base) guides(fill = FALSE, color = FALSE)
     } +
-    xlab(expression("baseline (" * mu ~ ", " * theta * ", " * pi * ")")) +
+    xlab(expression("baseline (" * mu * ", " * theta * ", " * pi * ")")) +
     ylab("value") +
     guides(col = FALSE) +
     {
@@ -399,20 +405,8 @@ metricsplot_single_effect(model = "ziln", size = 400, stop.if.absent = FALSE, in
 metricsplot_single_effect(model = "ziln", size = 400, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H).pi(D<H)")
 metricsplot_single_effect(model = "ziln", size = 400, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H),pi(D>H)")
 
-metricsplot_single_effect(model = "ziln", size = 400, qval = TRUE, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H)")
-metricsplot_single_effect(model = "ziln", size = 400, qval = TRUE, stop.if.absent = FALSE, input.effect = "Effect_theta(D>H)")
-metricsplot_single_effect(model = "ziln", size = 400, qval = TRUE, stop.if.absent = FALSE, input.effect = "Effect_pi(D<H)")
-metricsplot_single_effect(model = "ziln", size = 400, qval = TRUE, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H).pi(D<H)")
-metricsplot_single_effect(model = "ziln", size = 400, qval = TRUE, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H),pi(D>H)")
-
 metricsplot_single_effect(model = "ziln", size = 80, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H)")
 metricsplot_single_effect(model = "ziln", size = 80, stop.if.absent = FALSE, input.effect = "Effect_theta(D>H)")
 metricsplot_single_effect(model = "ziln", size = 80, stop.if.absent = FALSE, input.effect = "Effect_pi(D<H)")
 metricsplot_single_effect(model = "ziln", size = 80, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H).pi(D<H)")
 metricsplot_single_effect(model = "ziln", size = 80, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H),pi(D>H)")
-
-metricsplot_single_effect(model = "ziln", size = 80, qval = TRUE, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H)")
-metricsplot_single_effect(model = "ziln", size = 80, qval = TRUE, stop.if.absent = FALSE, input.effect = "Effect_theta(D>H)")
-metricsplot_single_effect(model = "ziln", size = 80, qval = TRUE, stop.if.absent = FALSE, input.effect = "Effect_pi(D<H)")
-metricsplot_single_effect(model = "ziln", size = 80, qval = TRUE, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H).pi(D<H)")
-metricsplot_single_effect(model = "ziln", size = 80, qval = TRUE, stop.if.absent = FALSE, input.effect = "Effect_mu(D>H),pi(D>H)")

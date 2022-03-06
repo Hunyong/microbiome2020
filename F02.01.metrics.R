@@ -3,8 +3,16 @@
 #' @example
 #' a = readRDS("output/stat-craft1-gene-nSig100-nGene10000-j2-rep1.rds")
 #' metrics(a$cdf.TP, a$cdf.TN, PN.rate = a$setting$n.signal / a$setting$n.gene, cutoff = 0.05) 
+
+process.zero <- function(metrics, value){
+  for (i in c(1:length(1:length(metrics)))){
+    metrics[i] <- max(metrics[i], value)
+  }
+  return(metrics)
+}
+
 metrics = function(cdf.TP, cdf.TN, PN.rate, cutoff = 0.05) {
-  sens = cdf.TP[, attr(cdf.TP, "cutoff") == cutoff]    # Power
+  sens = process.zero(cdf.TP[, attr(cdf.TP, "cutoff") == cutoff], 1e-10)    # Power
   fpr  = cdf.TN[, attr(cdf.TN, "cutoff") == cutoff]    # Type 1 error
   # cdf  = cdf.TP * PN.rate + cdf.TN * (1 - PN.rate)
   fdr  = fpr * (1 - PN.rate) / (sens * PN.rate + fpr * (1 - PN.rate))

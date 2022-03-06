@@ -1,9 +1,13 @@
 output*
 Report
-figure
+figure*
 tmp*
 Rplots.pdf
 .DS_Store
 *.Rproj*
 test*
 res*
+*.zip
+NA*
+.Rhistory
+.Rproj.user

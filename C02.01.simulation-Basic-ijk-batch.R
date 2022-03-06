@@ -150,15 +150,16 @@ for (i in rng) {
     n.signal = attr(data, "n.signal")
     
     # filtering
+    prop <- apply(data[, 1:n.gene], 2, function(s) mean(round(s)))
     nonzero.prop <- apply(data[, 1:n.gene], 2, function(s) mean(s > 0))
-    filtr = nonzero.prop >= prev.filter
+    filtr = (nonzero.prop >= prev.filter) * (prop>0)
     data[, which(!filtr)] = NA
     
     cat("sample size is ", dim(data)[1], "out of ", sum(n.sample), ".\n")
     cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), ".\n")
     
     # do the tests on the ramdon ZINB distribution we created
-    result <- tester.set.HD.batch(data, n.gene=n.gene, LEfSe.skip = TRUE) 
+    result <- tester.set.HD.batch(data, n.gene=n.gene, LEfSe.skip = TRUE)
                                   # suppressWarnWagner = TRUE, # if not suppressed, the slurm-out file size explodes.
                                   # LB.skip = F,LN.skip = F, MAST.skip = F,
                                   # KW.skip = F, Wg.skip = F, De2.skip = F, WRS.skip = F,

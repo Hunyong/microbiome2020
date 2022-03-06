@@ -837,7 +837,7 @@ aldex <- function(data) {
   gene.name <- gsub("y\\.", "", name[gene])
   cData <- data %>% transmute(samples = 1:n(), phenotype, batch)
   data <- t(as.matrix(data[, gene]))
-  mode(data) <- "integer"
+  data <- round(data)
   row.names(data) <- gene.name
 
   covariates <- data.frame("phenotype" = cData$phenotype,
@@ -846,10 +846,11 @@ aldex <- function(data) {
 
   x <- aldex.clr(data, mm, mc.samples=128, denom="all")
   glm.test <- aldex.glm(x)
+  pval <- glm.test$`model.phenotypeH Pr(>|t|)`
 
   out <- matrix(NA, nrow = length(gene.name), ncol = 2, dimnames = list(gene.name, c("Estimate", "pval")))
   out[, 1] <- NA
-  out[, 2] <- glm.test$`model.phenotypeH Pr(>|t|)`
+  out[, 2] <- pval
   return(out)
 }
 
