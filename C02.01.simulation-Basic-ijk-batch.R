@@ -23,7 +23,7 @@ source("C01.02.simulation.setup.R")
 args = commandArgs(trailingOnly=TRUE)  # passed from script
 if (length(args) == 0) {
   warning("commandArgs() was not provided. Set as the default value.")
-  args = c(i = 1, j = 1, k = 1, model = 3, perturb = 5, n = 80, save.stat.only = 0, n.gene = 1000, portion.signal = 0.1)
+  args = c(i = 1, j = 1, k = 1, model = 3, perturb = 5, n = 80, save.stat.only = 0, n.gene = 1000, portion.signal = 0.1, replica = 1)
 }
 cat("The Command Arg is: \n"); print(args)
 i = as.numeric(args[1])  # 1..10    delta effect
@@ -35,6 +35,8 @@ n = as.numeric(args[6])  # 80 800  sample size
 save.stat.only = as.logical(args[7]) # 1, 0
 n.gene = as.numeric(args[8]) # 1000 
 portion.signal = as.numeric(args[9]) # 0.1
+
+replica = as.numeric(args[10])
 
 # nm1 = sprintf("tmp_%s_%s_%s_%s_pert%1.1f_n%s_s%s.txt", 1, j, k, model, perturb, n, 1) # bookkeeping
 
@@ -94,8 +96,8 @@ for (i in rng) {
     ## To save the result
     # Check and create the folder
     save_path = paste0("output/")
-    save_file.raw = paste0("output/raw-n", n, "-pert", perturb, "-signal", portion.signal, "-", model, "-", i, ".", j, ".", k, ".rds")
-    save_file.stat = paste0("output/stat-n", n, "-pert", perturb, "-signal", portion.signal, "-", model, "-", i, ".", j, ".", k, ".rds")
+    save_file.raw = paste0("output/raw-n", n, "-pert", perturb, "-signal", portion.signal, "-", model, "-", i, ".", j, ".", k,"-replica", replica, ".rds")
+    save_file.stat = paste0("output/stat-n", n, "-pert", perturb, "-signal", portion.signal, "-", model, "-", i, ".", j, ".", k, "-replica", replica, ".rds")
     
     if (!dir.exists(save_path)) {message("No output folder detected. Creating one."); dir.create(save_path)}
     if (file.exists(save_file.stat)) {
@@ -119,7 +121,7 @@ for (i in rng) {
     cdf.cutoff = c((0:100)/500, 0.2 + 0.8 * (1:80)/80) # higher resolution for < 0.2.
     
     tt(1)
-    set.seed(i*10^3 + j*10^2 + k)
+    set.seed(replica*10^4 + i*10^3 + j*10^2 + k)
     # 1. parameter
     
     ## param.set = param (i, j, k) # list of H1, D1, H2, D2 (status-batch)
@@ -142,6 +144,8 @@ for (i in rng) {
            param.set = param.set,
            n.sample = n.sample, n.gene=n.gene,
            perturb = perturb,
+           portion.signal = portion.signal,
+           replica = replica,
            threshold = c(regular = cutoff, sig = sig, prev.filter = prev.filter))
     
     # 2. data
@@ -262,7 +266,7 @@ for (i in rng) {
             # write.table(" ", nm)
             
             cat("More replicate s = ", s, "\n")
-            set.seed(s*10^5 + i*10^3 + j*10^2 + k)
+            set.seed(replica*10^4 + s*10^5 + i*10^3 + j*10^2 + k)
             data = do.call(r.sim, dat.args)
             data %<>% dplyr::filter(sampleSum > 0)
             
