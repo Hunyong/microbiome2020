@@ -378,7 +378,7 @@ metricsplot_single_effect <- function(model, size, width = 12, height = 8, metri
         scale_color_manual(values = c("K1 (0, 0, 0)" = "dodgerblue"))
       }
     } +
-    geom_text_repel(aes(label = is_NA), size = 2, color = "#a14523", hjust = 0.25) +
+    geom_text(aes(label = is_NA, x = as.numeric(k) + c(K1 = -0.3, K3 = 0, K5 = 0.3)[batch_f]), size = 2, color = "#a14523") +
     {
       if (!delta.base) guides(fill = FALSE, color = FALSE)
     } +
