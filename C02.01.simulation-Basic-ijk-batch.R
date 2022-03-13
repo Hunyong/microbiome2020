@@ -76,6 +76,7 @@ for (i in rng) {
     
     cat("i: ", i,", j: ",j,", k: ",k,", model: ", model, ", perturb: ", perturb, "\n")
     cat("n = ", n,", stat.stat.only : ", save.stat.only,", n.gene: ",n.gene, "portion.signal: ", portion.signal, "\n")
+    cat("replica = ", replica, "\n")
     
     # bookkeeping
     # library(dplyr)
