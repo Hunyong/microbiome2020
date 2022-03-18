@@ -215,8 +215,8 @@ for (i in rng) {
     ## Statistics needed for CATplot (concordance at top)
     result$ranks.TP <- 
       t(apply(result$pval[, index.TP], 1, function(x) ifelse(is.na(x), NA, order(x))))
-    result$pval.metrics <- metrics(result$pval.cdf.TP, result$pval.cdf.TN, portion.signal)
-    result$qval.metrics <- metrics(result$qval.cdf.TP, result$qval.cdf.TN, portion.signal)
+    result$pval.metrics <- metrics(result$pval.cdf.TP, result$pval.cdf.TN,cdf.cutoff[which.min(abs(cdf.cutoff - attr(result, "cutoff.LEfSe")))], portion.signal)
+    result$qval.metrics <- metrics(result$qval.cdf.TP, result$qval.cdf.TN,cdf.cutoff[which.min(abs(cdf.cutoff - attr(result, "cutoff.LEfSe")))], portion.signal)
     result.metrics <- list("pval" = result$pval.metrics, "qval" = result$qval.metrics)
 
    if (FALSE) # This section is ignored. Jan 19, 2022.
