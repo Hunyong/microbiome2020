@@ -507,7 +507,7 @@ for (i in rng) {
 # Save the result
     stat.comb <- rbind(stat.power, stat.irregular, stat.na.prop)
     
-    saveRDS(list(stat = stat.comb, cdf = result$pval.cdf, metrics = result.metrics, setting = setting.summary), save_file.stat)
+    saveRDS(list(stat = stat.comb, cdf = result$pval.cdf, pval.cdf.TP = result$pval.cdf.TP, pval.cdf.TN = result$pval.cdf.TN, metrics = result.metrics, setting = setting.summary), save_file.stat)
     if (!save.stat.only) saveRDS(result, save_file.raw)
     
     # # bookkeeping
