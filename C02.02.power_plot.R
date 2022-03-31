@@ -102,7 +102,7 @@ powerplot <- function(model, size, width = 12, height = 8, delta.base = TRUE,
               ) %>%
               dplyr::select(
                 "LB", "LN", "MAST", "KW", "KW-II", "DS2", "DS2ZI", "MGS",
-                "ANCOM", "i", "j", "k", "batch", "effect"
+                "ANCOM", "LFE", "ALDEX", "i", "j", "k", "batch", "effect"
               )
 
             res <- rbind(res, tmp[1, ])
@@ -117,11 +117,11 @@ powerplot <- function(model, size, width = 12, height = 8, delta.base = TRUE,
     res <- res %>%
       gather(
         key = "method", value = "value",
-        `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`
+        `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`, `LFE`, `ALDEX`
       )
     res$method_f <- factor(res$method,
-      levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II"),
-      labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II")
+      levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "LFE", "ALDEX"),
+      labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "LFE", "ALDEX")
     )
     res$batch_f <- factor(res$batch, levels = batch.levels, labels = batch.labels)
     res$effect_f <- factor(res$effect, levels = disease.levels, labels = disease.labels)
@@ -278,7 +278,7 @@ powercurve <- function(model, width = 12, height = 9,
                 ) %>%
                 dplyr::select(
                   cutoff, "LB", "LN", "MAST", "KW", "KW-II", "DS2",
-                  "DS2ZI", "MGS", "ANCOM",
+                  "DS2ZI", "MGS", "ANCOM", "LFE", "ALDEX",
                   n, i, j, k, batch, effect
                 )
               res <- rbind(res, tmp)
@@ -295,11 +295,11 @@ powercurve <- function(model, width = 12, height = 9,
     res <- res %>%
       gather(
         key = "method", value = "value",
-        `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`
+        `LB`, `LN`, `MAST`, `KW`, `KW-II`, `DS2`, `DS2ZI`, `MGS`, `ANCOM`, `LFE`, `ALDEX`
       )
     res$method_f <- factor(res$method,
-      levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II"),
-      labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II")
+      levels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "LFE", "ALDEX"),
+      labels = c("LN", "LB", "MAST", "DS2", "DS2ZI", "MGS", "ANCOM", "KW", "KW-II", "LFE", "ALDEX")
     )
     res$batch_f <- factor(res$batch, levels = batch.levels, labels = batch.labels)
     res$effect_f <- factor(res$effect, levels = disease.levels, labels = disease.labels)
