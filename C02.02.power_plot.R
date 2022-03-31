@@ -203,20 +203,17 @@ powerplot <- function(model, size, width = 12, height = 8, delta.base = TRUE,
 }
 
 
-powerplot(model = "ziln", size = 400, stop.if.absent = FALSE)
-powerplot(model = "ziln", size = 80, stop.if.absent = FALSE)
-powerplot(model = "ziln", size = 80, include.null = TRUE, stop.if.absent = FALSE)
-powerplot(model = "ziln", size = 400, delta.base = FALSE, stop.if.absent = FALSE) # disease effect sensitivity analysis
-powerplot(model = "ziln", size = 80, delta.base = FALSE, stop.if.absent = FALSE) # disease effect sensitivity analysis
+# powerplot(model = "ziln", size = 400, stop.if.absent = FALSE)
+# powerplot(model = "ziln", size = 80, stop.if.absent = FALSE)
+# powerplot(model = "ziln", size = 80, include.null = TRUE, stop.if.absent = FALSE)
+# powerplot(model = "ziln", size = 400, delta.base = FALSE, stop.if.absent = FALSE) # disease effect sensitivity analysis
+# powerplot(model = "ziln", size = 80, delta.base = FALSE, stop.if.absent = FALSE) # disease effect sensitivity analysis
 
-powerplot(model = "zig", size = 400, stop.if.absent = FALSE)
-powerplot(model = "zig", size = 80, stop.if.absent = FALSE)
+# powerplot(model = "zig", size = 400, stop.if.absent = FALSE)
+# powerplot(model = "zig", size = 80, stop.if.absent = FALSE)
 
-powerplot(model = "zinb", size = 400, stop.if.absent = FALSE)
-powerplot(model = "zinb", size = 80, stop.if.absent = FALSE)
-
-
-
+# powerplot(model = "zinb", size = 400, stop.if.absent = FALSE)
+# powerplot(model = "zinb", size = 80, stop.if.absent = FALSE)
 
 
 powercurve <- function(model, width = 12, height = 9,
@@ -352,11 +349,11 @@ powercurve <- function(model, width = 12, height = 9,
     ylim(c(0, 1)) +
     # xlim(c(0,1)) +
     scale_x_continuous(breaks = c(0, 0.03, 0.05, 0.10, 0.15, 0.2), limits = c(0, 0.2)) +
-    scale_shape_manual(values = c(LN = 16, LB = 3, MAST = 1, KW = 18, `KW-II` = 3, DS2 = 8, `DS2ZI` = 3, MGS = 3, ANCOM = 16)) +
-    scale_linetype_manual(values = c(LN = 1, LB = 3, MAST = 1, KW = 1, `KW-II` = 3, DS2 = 1, `DS2ZI` = 3, MGS = 1, ANCOM = 3)) +
+    scale_shape_manual(values = c(LN = 16, LB = 3, MAST = 1, KW = 18, `KW-II` = 3, DS2 = 8, `DS2ZI` = 3, MGS = 3, ANCOM = 16, LFE = 8, ALDEX = 1)) +
+    scale_linetype_manual(values = c(LN = 1, LB = 3, MAST = 1, KW = 1, `KW-II` = 3, DS2 = 1, `DS2ZI` = 3, MGS = 1, ANCOM = 3, LFE = 1, ALDEX = 3)) +
     scale_color_manual(values = c(
       LN = "firebrick", LB = "firebrick", MAST = "darkseagreen4", KW = "darkorchid3", `KW-II` = "darkorchid3",
-      DS2 = "dodgerblue3", `DS2ZI` = "dodgerblue3", MGS = "goldenrod3", ANCOM = "goldenrod3"
+      DS2 = "dodgerblue3", `DS2ZI` = "dodgerblue3", MGS = "goldenrod3", ANCOM = "goldenrod3", ALDEX = "black", LFE = "black"
     )) +
     guides(
       fill = FALSE, col = guide_legend(nrow = 1, title = NULL),

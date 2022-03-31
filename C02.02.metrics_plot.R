@@ -532,6 +532,9 @@ two_metricsplot_single_effect <- function(model, width = 12, height = 8, metrics
     disease.levels <- c("Effect_null", disease.levels)
     disease.labels <- c("D1 (null)", disease.labels)
   }
+  n.rng <- c(80, 400)
+  n.labels <- paste0("n==", n.rng)
+  
   dict <- list("sensitivity" = 1, "type1error" = 2, "FDR" = 3, "accuracy" = 4, "AUC" = 5)
 
   for (replica in c(1:n.replica)) {
@@ -589,6 +592,7 @@ two_metricsplot_single_effect <- function(model, width = 12, height = 8, metrics
     res$batch_f <- factor(res$batch, levels = batch.levels, labels = batch.labels)
     res$effect_f <- factor(res$effect, levels = disease.levels, labels = disease.labels)
     res$metrics_f <- factor(res$metrics, levels = metrics.c, labels = metrics.c)
+    res$size_f <- factor(res$n, levels = n.rng, labels = n.labels)
 
 
     if (!delta.base) res$effect2_f <- factor(res$effect, levels = disease.levels, labels = disease2.labels)
@@ -662,7 +666,7 @@ two_metricsplot_single_effect <- function(model, width = 12, height = 8, metrics
       if (!delta.base) facet_nested(method_f ~ effect2_f + effect_f, labeller = label_parsed)
     } +
     {
-      if (delta.base) facet_grid(method_f ~ metrics_f + size, scales = "free_y", labeller = label_parsed)
+      if (delta.base) facet_grid(method_f ~ metrics_f + size_f, scales = "free_y", labeller = label_parsed)
     } +
     theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom") -> p
   ggsave(file = fn, p, width = width, height = height)
