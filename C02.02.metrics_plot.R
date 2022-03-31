@@ -592,7 +592,7 @@ two_metricsplot_single_effect <- function(model, width = 12, height = 8, metrics
     res$batch_f <- factor(res$batch, levels = batch.levels, labels = batch.labels)
     res$effect_f <- factor(res$effect, levels = disease.levels, labels = disease.labels)
     res$metrics_f <- factor(res$metrics, levels = metrics.c, labels = metrics.c)
-    res$size_f <- factor(res$n, levels = n.rng, labels = n.labels)
+    res$size_f <- factor(res$size, levels = n.rng, labels = n.labels)
 
 
     if (!delta.base) res$effect2_f <- factor(res$effect, levels = disease.levels, labels = disease2.labels)
