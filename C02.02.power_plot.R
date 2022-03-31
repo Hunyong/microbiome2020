@@ -203,17 +203,17 @@ powerplot <- function(model, size, width = 12, height = 8, delta.base = TRUE,
 }
 
 
-# powerplot(model = "ziln", size = 400, stop.if.absent = FALSE)
-# powerplot(model = "ziln", size = 80, stop.if.absent = FALSE)
-# powerplot(model = "ziln", size = 80, include.null = TRUE, stop.if.absent = FALSE)
-# powerplot(model = "ziln", size = 400, delta.base = FALSE, stop.if.absent = FALSE) # disease effect sensitivity analysis
-# powerplot(model = "ziln", size = 80, delta.base = FALSE, stop.if.absent = FALSE) # disease effect sensitivity analysis
+powerplot(model = "ziln", size = 400, stop.if.absent = FALSE)
+powerplot(model = "ziln", size = 80, stop.if.absent = FALSE)
+powerplot(model = "ziln", size = 80, include.null = TRUE, stop.if.absent = FALSE)
+powerplot(model = "ziln", size = 400, delta.base = FALSE, stop.if.absent = FALSE) # disease effect sensitivity analysis
+powerplot(model = "ziln", size = 80, delta.base = FALSE, stop.if.absent = FALSE) # disease effect sensitivity analysis
 
-# powerplot(model = "zig", size = 400, stop.if.absent = FALSE)
-# powerplot(model = "zig", size = 80, stop.if.absent = FALSE)
+powerplot(model = "zig", size = 400, stop.if.absent = FALSE)
+powerplot(model = "zig", size = 80, stop.if.absent = FALSE)
 
-# powerplot(model = "zinb", size = 400, stop.if.absent = FALSE)
-# powerplot(model = "zinb", size = 80, stop.if.absent = FALSE)
+powerplot(model = "zinb", size = 400, stop.if.absent = FALSE)
+powerplot(model = "zinb", size = 80, stop.if.absent = FALSE)
 
 
 powercurve <- function(model, width = 12, height = 9,
