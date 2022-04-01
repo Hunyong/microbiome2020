@@ -666,7 +666,7 @@ two_metricsplot_single_effect <- function(model, width = 12, height = 8, metrics
       if (!delta.base) facet_nested(method_f ~ effect2_f + effect_f, labeller = label_parsed)
     } +
     {
-      if (delta.base) facet_grid(method_f ~ metrics_f + size_f, scales = "free_y", labeller = label_parsed)
+      if (delta.base) facet_nested(method_f ~ size_f + metrics_f, scales = "free_y", labeller = label_parsed)
     } +
     theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom") -> p
   ggsave(file = fn, p, width = width, height = height)
