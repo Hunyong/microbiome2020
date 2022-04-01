@@ -1,6 +1,6 @@
 output*
 Report
-figure*
+figure-*
 tmp*
 Rplots.pdf
 .DS_Store
