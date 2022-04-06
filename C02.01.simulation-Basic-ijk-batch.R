@@ -164,7 +164,7 @@ for (i in rng) {
     cat("Remaining genes after screening: ", sum(filtr), "out of ", length(filtr), ".\n")
     
     # do the tests on the ramdon ZINB distribution we created
-    result <- tester.set.HD.batch(data, n.gene=n.gene, LN.skip = TRUE, ALDEX.skip = TRUE)
+    result <- tester.set.HD.batch(data, n.gene=n.gene)
                                   # suppressWarnWagner = TRUE, # if not suppressed, the slurm-out file size explodes.
                                   # LB.skip = F,LN.skip = F, MAST.skip = F,
                                   # KW.skip = F, Wg.skip = F, De2.skip = F, WRS.skip = F,
@@ -216,7 +216,7 @@ for (i in rng) {
     result$ranks.TP <- 
       t(apply(result$pval[, index.TP], 1, function(x) ifelse(is.na(x), NA, order(x))))
     result$pval.metrics <- metrics(result$pval.cdf.TP, result$pval.cdf.TN, PN.rate = portion.signal, cutoff.LEF = cdf.cutoff[which.min(abs(cdf.cutoff - attr(result, "cutoff.LEfSe")))])
-    result$qval.metrics <- metrics(result$qval.cdf.TP, result$qval.cdf.TN, PN.rate = portion.signal, cutoff.LEF = cdf.cutoff[which.min(abs(cdf.cutoff - attr(result, "cutoff.LEfSe")))])
+    result$qval.metrics <- metrics(result$qval.cdf.TP, result$qval.cdf.TN, PN.rate = portion.signal, cutoff.LEF = cdf.cutoff.q[which.min(abs(cdf.cutoff.q - attr(result, "cutoff.LEfSe")))])
     result.metrics <- list("pval" = result$pval.metrics, "qval" = result$qval.metrics)
 
    if (FALSE) # This section is ignored. Jan 19, 2022.
