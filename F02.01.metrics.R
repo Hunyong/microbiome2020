@@ -11,7 +11,7 @@ process.zero <- function(metrics, value){
   return(metrics)
 }
 
-metrics = function(cdf.TP, cdf.TN, PN.rate, cutoff.LEF, cutoff = 0.05) {
+metrics = function(cdf.TP, cdf.TN, PN.rate, sens.LFE, fpr.LFE, cutoff = 0.05) {
   sens = process.zero(cdf.TP[, attr(cdf.TP, "cutoff") == cutoff], 1e-10)    # Power
   fpr  = cdf.TN[, attr(cdf.TN, "cutoff") == cutoff]    # Type 1 error
   # cdf  = cdf.TP * PN.rate + cdf.TN * (1 - PN.rate)
@@ -21,16 +21,14 @@ metrics = function(cdf.TP, cdf.TN, PN.rate, cutoff.LEF, cutoff = 0.05) {
   
    output = data.frame(sensitivity = sens, type1error = fpr, FDR = fdr, accuracy = acc, AUC = AUC)
 
-  sens.LEF = max(cdf.TP[rownames(cdf.TP)=="LFE", attr(cdf.TP, "cutoff") == cutoff.LEF], 1e-10)
-  fpr.LEF  = cdf.TN[rownames(cdf.TP)=="LFE", attr(cdf.TN, "cutoff") == cutoff.LEF]    # Type 1 error
   # cdf  = cdf.TP * PN.rate + cdf.TN * (1 - PN.rate)
-  fdr.LEF  = NA
-  acc.LEF  = {sens.LEF * PN.rate + (1 - fpr.LEF) * (1 - PN.rate)}
+  fdr.LFE  = NA
+  acc.LFE  = {sens.LFE * PN.rate + (1 - fpr.LFE) * (1 - PN.rate)}
 
-  output["LFE", "sensitivity"] <- sens.LEF
-  output["LFE", "type1error"] <- fpr.LEF
-  output["LFE", "FDR"] <- fdr.LEF
-  output["LFE", "accuracy"] <- acc.LEF
+  output["LFE", "sensitivity"] <- sens.LFE
+  output["LFE", "type1error"] <- fpr.LFE
+  output["LFE", "FDR"] <- fdr.LFE
+  output["LFE", "accuracy"] <- acc.LFE
   attr(output, "legend") = "power = sensitivity, type 1 error = fpr"
   
   return(output)

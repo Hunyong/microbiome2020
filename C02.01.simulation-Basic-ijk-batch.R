@@ -187,12 +187,16 @@ for (i in rng) {
       result$pval[, index.TP] %>% apply(1, function(x) {
         if (all(is.na(x))) rep(NA, length(cdf.cutoff)) else ecdf(x)(cdf.cutoff)
       }) %>% t
+    sens.LFE <- 1 - mean(is.na(result$pval["LFE", index.TP])) # sensitivity for LFE
+    result$pval.cdf.TP["LFE", ] <- result$pval.cdf.TP["LFE", ] * sens.LFE
     attr(result$pval.cdf.TP, "cutoff") = cdf.cutoff
     
     result$pval.cdf.TN <- 
       result$pval[, index.TN] %>% apply(1, function(x) {
         if (all(is.na(x))) rep(NA, length(cdf.cutoff)) else ecdf(x)(cdf.cutoff)
       }) %>% t
+    fpr.LFE <- 1 - mean(is.na(result$pval["LFE", index.TN])) # fpr for LFE
+    result$pval.cdf.TN["LFE", ] <- result$pval.cdf.TN["LFE", ] * fpr.LFE
     attr(result$pval.cdf.TN, "cutoff") = cdf.cutoff
     
     
@@ -215,8 +219,8 @@ for (i in rng) {
     ## Statistics needed for CATplot (concordance at top)
     result$ranks.TP <- 
       t(apply(result$pval[, index.TP], 1, function(x) ifelse(is.na(x), NA, order(x))))
-    result$pval.metrics <- metrics(result$pval.cdf.TP, result$pval.cdf.TN, PN.rate = portion.signal, cutoff.LEF = cdf.cutoff[which.min(abs(cdf.cutoff - attr(result, "cutoff.LEfSe")))])
-    result$qval.metrics <- metrics(result$qval.cdf.TP, result$qval.cdf.TN, PN.rate = portion.signal, cutoff.LEF = cdf.cutoff.q[which.min(abs(cdf.cutoff.q - attr(result, "cutoff.LEfSe")))])
+    result$pval.metrics <- metrics(result$pval.cdf.TP, result$pval.cdf.TN, PN.rate = portion.signal, sens.LFE = sens.LFE, fpr.LFE = fpr.LFE)
+    result$qval.metrics <- metrics(result$qval.cdf.TP, result$qval.cdf.TN, PN.rate = portion.signal, sens.LFE = sens.LFE, fpr.LFE = fpr.LFE)
     result.metrics <- list("pval" = result$pval.metrics, "qval" = result$qval.metrics)
 
    if (FALSE) # This section is ignored. Jan 19, 2022.
