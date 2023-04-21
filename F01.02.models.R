@@ -91,9 +91,10 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       t1 <- Sys.time()
       result[[1]][c("LB.nonz", "LB.zero", "LB.glob"), l] <- tmp[1:3, 1] #coef. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
       result[[2]][c("LB.nonz", "LB.zero", "LB.glob"), l] <- tmp[1:3, 2] #pval. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
-      result[[3]][c("LB.nonz", "LB.zero", "LB.glob"), l] <- t1-t0 #pval. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
       
       if (any(!is.na(tmp[1:2, 2]))) result[[2]]["LB.min", l] <- min(tmp[1:2, 2], na.rm = TRUE)
+      result[[3]][c("LB.nonz", "LB.zero", "LB.glob","LB.min"), l] <- t1-t0 #pval. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
+      
     }
   } else {cat("LB is skipped\n")}
   
@@ -134,7 +135,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
     result[[1]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- tmp[[1]][1:3,] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
     result[[2]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- tmp[[2]][1:3,] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
     result[[2]]["MAST.min", index.filtered] <- pmin(tmp[[2]][1,], tmp[[2]][2,], na.rm = TRUE)
-    result[[3]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- t1-t0 #time 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
+    result[[3]][c("MAST.nonz", "MAST.zero", "MAST.glob","MAST.min"), index.filtered] <- t1-t0 #time 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
     
   } else {cat("MAST is skipped\n")}
   
@@ -176,7 +177,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       t1 <- Sys.time()
       result[[1]][c("Wg.nonz", "Wg.zero", "Wg.glob"), l] <- tmp[1:3,1] #coef.
       result[[2]][c("Wg.nonz", "Wg.zero", "Wg.glob"), l] <- tmp[1:3,2] #pval.
-      result[[3]][c("Wg.nonz", "Wg.zero", "Wg.glob"), l] <- t1-t0
+      result[[3]][c("Wg.nonz", "Wg.zero", "Wg.glob","Wg.min"), l] <- t1-t0
       if (any(!is.na(tmp[1:2, 2]))) result[[2]]["Wg.min", l] <- min(tmp[1:2, 2], na.rm = TRUE)
     }
   } else {cat("Wg is skipped\n")}
