@@ -50,7 +50,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   test.names <- c("LB.nonz", "LB.zero", "LB.glob", "LB.min", "LN", "MAST.nonz", "MAST.zero", "MAST.glob", "MAST.min", 
                   "KW", "Wg.nonz", "Wg.zero", "Wg.glob", "Wg.min", "DS2", "DS2ZI", "WRS", "MGS", "ANCOM.sz", "ANCOM", "LFE", "ALDEX")
   mat.tmp <- matrix(NA, n.test, n.gene, dimnames = list(test.names, NULL)) # n.test=15, n.gene=1000
-  result <- list(coef = mat.tmp, pval = mat.tmp)
+  result <- list(coef = mat.tmp, pval = mat.tmp,time = mat.tmp)
   if (skeleton) {return(result)}
   
   # 0.1 data
@@ -79,6 +79,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   #1-3. LB
   if (!LB.skip) {
     for (l in genes) {
+      t0 <- Sys.time()
       if (l %% 30 == 0) cat (" l = ",l," ")
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
       if (sum(data.l$y, na.rm = TRUE)==0) {
@@ -87,8 +88,11 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
         ## print(data[,l]) (For debug only)
         tmp <- LB(data.l)  #logistic beta
       }
+      t1 <- Sys.time()
       result[[1]][c("LB.nonz", "LB.zero", "LB.glob"), l] <- tmp[1:3, 1] #coef. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
       result[[2]][c("LB.nonz", "LB.zero", "LB.glob"), l] <- tmp[1:3, 2] #pval. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
+      result[[3]][c("LB.nonz", "LB.zero", "LB.glob"), l] <- t1-t0 #pval. 1:3 corresponds to "LB.nonz", "LB.zero", "LB.glob"
+      
       if (any(!is.na(tmp[1:2, 2]))) result[[2]]["LB.min", l] <- min(tmp[1:2, 2], na.rm = TRUE)
     }
   } else {cat("LB is skipped\n")}
@@ -100,6 +104,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   if (!LN.skip) {
     for (l in genes) {
       # cat (l," ")
+      t0 <- Sys.time()
+      
       if (l %% 200 == 0) {cat(l, " ")}
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
       if (sum(data.l$y, na.rm = TRUE)==0) {
@@ -107,21 +113,29 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       } else {
         tmp <- LN(data.l)  #log normal
       }
+      t1 <- Sys.time()
       result[[1]]["LN", l] <- tmp[1,1] #coef.
       result[[2]]["LN", l] <- tmp[1,2] #pval.
+      result[[3]]["LN", l] <- t1-t0 #pval.
+      
     }
   } else {cat("LN is skipped\n")}
   
   #5-7. MAST
   cat("\n5-7. MAST\n")
   if(!MAST.skip){
+    t0 <- Sys.time()
     # tmp <- MAST(data)  #MAST
     # tmp <- data.frame(coef = rep(NA,3), pval = NA)    #MAST maybe not applicable
     tmp <- try({MAST(data[, index.filtered.meta])})
+    t1 <- Sys.time()
+    
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
     result[[1]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- tmp[[1]][1:3,] #coef. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
     result[[2]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- tmp[[2]][1:3,] #pval. 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
     result[[2]]["MAST.min", index.filtered] <- pmin(tmp[[2]][1,], tmp[[2]][2,], na.rm = TRUE)
+    result[[3]][c("MAST.nonz", "MAST.zero", "MAST.glob"), index.filtered] <- t1-t0 #time 1:3 corresponds to "MA.nonz", "MA.zero", "MA.glob"
+    
   } else {cat("MAST is skipped\n")}
   
   #8. KW
@@ -129,6 +143,8 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   if (!KW.skip){
     for (l in genes) {
       # cat (l," ")
+      t0 <- Sys.time()
+      
       if (l %% 200 == 0) {cat(l, " ")}
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
       if (sum(data.l$y, na.rm = TRUE)==0) {
@@ -136,8 +152,11 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       } else {
         tmp <- KW(data.l)  #KW
       }
+      t1 <- Sys.time()
+      
       result[[1]]["KW", l] <- tmp[1,1] #coef.
       result[[2]]["KW", l] <- tmp[1,2] #pval.
+      result[[3]]["KW", l] <- t1-t0 #time
     }
   } else {cat("KW is skipped\n")}
   
@@ -146,6 +165,7 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   if(!Wg.skip){
     for (l in genes) {
       # cat (l," ")
+      t0 <- Sys.time()
       if (l %% 200 == 0) {cat(l, " ")}
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
       if (sum(data.l$y, na.rm = TRUE)==0) {
@@ -153,8 +173,10 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       } else {
         tmp <- Wagner(data.l, zeroModel = "logistic", suppressWarning = suppressWarnWagner)
       }
+      t1 <- Sys.time()
       result[[1]][c("Wg.nonz", "Wg.zero", "Wg.glob"), l] <- tmp[1:3,1] #coef.
       result[[2]][c("Wg.nonz", "Wg.zero", "Wg.glob"), l] <- tmp[1:3,2] #pval.
+      result[[3]][c("Wg.nonz", "Wg.zero", "Wg.glob"), l] <- t1-t0
       if (any(!is.na(tmp[1:2, 2]))) result[[2]]["Wg.min", l] <- min(tmp[1:2, 2], na.rm = TRUE)
     }
   } else {cat("Wg is skipped\n")}
@@ -162,27 +184,35 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
   #12. De2
   cat("\n12. DESeq2 vanilla\n")
   if(!De2.skip){
+    t0 <- Sys.time()
     DS2 = DS2.vanilla
     tmp <- try({DS2(data[, index.filtered.meta])})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+    t1 <- Sys.time()
     result[[1]]["DS2", index.filtered] <- tmp[,1] #coef.
     result[[2]]["DS2", index.filtered] <- tmp[,2] #pval.
+    result[[3]]["DS2", index.filtered] <- t1-t0 #pval.
   } else {cat("DS2-vanilla is skipped\n")}
   
   #13. De2 + ZINBwave
   cat("\n13. DS2 zinbwave\n")
   if(!De2.skip){
+    t0 <- Sys.time()
     DS2 = DS2.zinb
     tmp <- try({DS2(data[, index.filtered.meta])})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+    t1 <- Sys.time()
     result[[1]]["DS2ZI", index.filtered] <- tmp[,1] #coef.
     result[[2]]["DS2ZI", index.filtered] <- tmp[,2] #pval.
+    result[[3]]["DS2ZI", index.filtered] <- t1-t0 #time.
+    
   } else {cat("DS2-zinbwave is skipped\n")}
   
   cat("\n14. WRS\n l = ")
   if (!WRS.skip){
     for (l in genes) {
       # cat (l," ")
+      t0 <- Sys.time()
       if (l %% 200 == 0) {cat(l, " ")}
       data.l = data.frame(y=data[,l], data[,c("phenotype", "batch", "sampleSum")])
       if (sum(data.l$y, na.rm = TRUE)==0) {
@@ -190,52 +220,70 @@ tester.set.HD.batch <- function(data, n.gene = 10000,
       } else {
         tmp <- WRS(data.l)  #KW
       }
+      t1 <- Sys.time()
       result[[1]]["WRS", l] <- tmp[1,1] #coef.
       result[[2]]["WRS", l] <- tmp[1,2] #pval.
+      result[[3]]["WRS", l] <- t1-t0 #time.
     }
   } else {cat("WRS is skipped\n")}
   
   #15. metagenomeSeq
   cat("\n15 metagenomeSeq\n")
   if(!MGS.skip){
+    t0 <- Sys.time()
     tmp <- try({mgs(data[, index.filtered.meta])})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+    t1 <- Sys.time()
     
     result[[1]]["MGS", index.filtered] <- tmp[, "Estimate"] #coef.
     result[[2]]["MGS", index.filtered] <- tmp[, "pval"]     #pval.
+    result[[3]]["MGS", index.filtered] <- tmp[, "pval"]     #time.
+    
   } else {cat("MGS is skipped\n")}
   
   #16. ANCOM-BC
   cat("16. ANCOM-BC\n")
   if(!ANCOM.skip){
+    t0 <- Sys.time()
     tmp <- try({ANC(data[, index.filtered.meta], ignore.structural.zero = FALSE)})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
-    
+    t1 <- Sys.time()
     result[[1]]["ANCOM.sz", index.filtered] <- tmp[,1] #coef.
     result[[2]]["ANCOM.sz", index.filtered] <- tmp[,2] #pval.
     result[[1]]["ANCOM", index.filtered] <- tmp[,1] #coef.
     result[[2]]["ANCOM", index.filtered] <- tmp[,2] #pval.
     result[[2]]["ANCOM", is.infinite(result[[1]]["ANCOM", ])] = NA
+    result[[3]][c("ANCOM","ANCOM.sz"), index.filtered] <- t1-t0 #time.
+    
   } else {cat("ANCOM-BC is skipped\n")}
   
   #17. LEfSe
   cat("17. LEfSe\n")
   if(!LEfSe.skip){
+    t0 <- Sys.time()
     tmp <- try({LEfSe(data[, index.filtered.meta])})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
+    t1 <- Sys.time()
     
     result[[1]]["LFE", index.filtered] <- tmp[,1] #coef.
     result[[2]]["LFE", index.filtered] <- tmp[,2] #rank/n.
+    result[[3]]["LFE", index.filtered] <- t1-t0 #rank/n.
+    
   } else {cat("LEfSe is skipped\n")}
   
   #18. ALDEX2
   cat("18. ALDEX2\n")
   if(!ALDEX.skip){
+    t0 <- Sys.time()
+    
     tmp <- try({aldex(data[, index.filtered.meta])})
     if (class(tmp)[1] == "try-error") tmp = matrix(NA, ncol = 2)
-
+    t1 <- Sys.time()
+    
     result[[1]]["ALDEX", index.filtered] <- tmp[,1] #coef.
     result[[2]]["ALDEX", index.filtered] <- tmp[,2] #pval.
+    result[[3]]["ALDEX", index.filtered] <- t1-t0 #pval.
+    
   } else {cat("ALDEX2 is skipped\n")}
   
   # #19. SONGBIRD
